@@ -1,0 +1,128 @@
+{
+  "entities": {
+    "userProfile": {
+      "title": "UserProfile",
+      "description": "User profile settings and role",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "photoURL": { "type": "string", "maxLength": 1024 },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "theme": { "type": "string", "enum": ["dark", "light"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["userId", "email", "role"]
+    },
+    "watchlistItem": {
+      "title": "WatchlistItem",
+      "description": "User anime watchlist record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "animeId": { "type": "number" },
+        "title": { "type": "string", "maxLength": 256 },
+        "coverImage": { "type": "string", "maxLength": 1024 },
+        "status": { "type": "string", "enum": ["WATCHING", "COMPLETED", "PLANNING", "ON_HOLD", "DROPPED"] },
+        "score": { "type": "number" },
+        "progress": { "type": "number" },
+        "totalEpisodes": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["userId", "animeId", "status"]
+    },
+    "watchHistoryItem": {
+      "title": "WatchHistoryItem",
+      "description": "Anime playback progress history",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "animeId": { "type": "number" },
+        "animeTitle": { "type": "string", "maxLength": 256 },
+        "coverImage": { "type": "string", "maxLength": 1024 },
+        "episodeNumber": { "type": "number" },
+        "progressSeconds": { "type": "number" },
+        "totalDurationSeconds": { "type": "number" },
+        "lastWatchedAt": { "type": "string" }
+      },
+      "required": ["userId", "animeId", "episodeNumber"]
+    },
+    "announcement": {
+      "title": "Announcement",
+      "description": "Platform announcement banner",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "content": { "type": "string", "maxLength": 1000 },
+        "type": { "type": "string", "enum": ["info", "warning", "success"] },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["title", "content", "active"]
+    },
+    "newsArticle": {
+      "title": "NewsArticle",
+      "description": "Anime news article",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 500 },
+        "link": { "type": "string", "maxLength": 1024 },
+        "excerpt": { "type": "string", "maxLength": 1000 },
+        "publishedAt": { "type": "string" },
+        "author": { "type": "string", "maxLength": 200 },
+        "imageUrl": { "type": "string", "maxLength": 1024 },
+        "videoId": { "type": "string", "maxLength": 128 },
+        "sourceName": { "type": "string", "maxLength": 100 },
+        "category": { "type": "string", "enum": ["News", "Announcements", "Movies", "Releases", "General"] },
+        "enriched": { "type": "boolean" },
+        "lastEnrichedAt": { "type": "string" }
+      },
+      "required": ["id", "title", "link", "publishedAt"]
+    },
+    "newsSource": {
+      "title": "NewsSource",
+      "description": "RSS feed source for news",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "url": { "type": "string", "maxLength": 1024 },
+        "category": { "type": "string" },
+        "active": { "type": "boolean" }
+      },
+      "required": ["id", "name", "url", "active"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/userProfile" },
+      "description": "User profiles collection"
+    },
+    "/watchlists/{watchlistId}": {
+      "schema": { "$ref": "#/entities/watchlistItem" },
+      "description": "Global user watchlists"
+    },
+    "/watchHistory/{historyId}": {
+      "schema": { "$ref": "#/entities/watchHistoryItem" },
+      "description": "Global watch progress history"
+    },
+    "/announcements/{announcementId}": {
+      "schema": { "$ref": "#/entities/announcement" },
+      "description": "System announcements"
+    },
+    "/news/{articleId}": {
+      "schema": { "$ref": "#/entities/newsArticle" },
+      "description": "Anime news articles"
+    },
+    "/news_sources/{sourceId}": {
+      "schema": { "$ref": "#/entities/newsSource" },
+      "description": "RSS feed sources"
+    }
+  }
+}

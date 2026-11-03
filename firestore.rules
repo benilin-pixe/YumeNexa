@@ -1,0 +1,91 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'benilin76@gmail.com' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        exists(/databases/$(database)/documents/adminRoles/$(request.auth.uid))
+      );
+    }
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create, update: if request.auth.uid == userId || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Admin Roles collection
+    match /adminRoles/{roleId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Admin Audit Logs
+    match /adminAuditLogs/{logId} {
+      allow read, create: if isAdmin();
+      allow update, delete: if false; // Audit logs are immutable
+    }
+
+    // System Health & Monitoring
+    match /systemHealth/{healthId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Provider Health
+    match /providerHealth/{providerId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Playback Metrics
+    match /playbackMetrics/{metricId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Watchlists
+    match /watchlists/{watchlistId} {
+      allow read: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // Watch History
+    match /watchHistory/{historyId} {
+      allow read: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // Announcements
+    match /announcements/{announcementId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // News
+    match /news/{articleId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // News Sources
+    match /news_sources/{sourceId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+  }
+}

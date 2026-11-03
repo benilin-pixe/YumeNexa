@@ -1,0 +1,6 @@
+{
+  "name": "YumeNexa",
+  "description": "Enter the next anime universe — Discover anime, release schedules, news, trailers, streaming, and personal watchlists.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
