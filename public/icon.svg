@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Midnight Navy Gradient -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f19" />
+      <stop offset="50%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#050811" />
+    </linearGradient>
+
+    <!-- Master Yume Violet-Cyan Gradient -->
+    <linearGradient id="yumeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a855f7" />
+      <stop offset="35%" stop-color="#8b5cf6" />
+      <stop offset="70%" stop-color="#6366f1" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+
+    <!-- Accent Pink-Violet Gradient -->
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ec4899" />
+      <stop offset="50%" stop-color="#d946ef" />
+      <stop offset="100%" stop-color="#8b5cf6" />
+    </linearGradient>
+
+    <!-- Orbital Ring Gradient -->
+    <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.9" />
+      <stop offset="50%" stop-color="#a855f7" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#ec4899" stop-opacity="0.85" />
+    </linearGradient>
+
+    <!-- Glow Effect -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Base Rounded Container -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGradient)" />
+
+  <!-- Outer Glow Ring -->
+  <rect width="504" height="504" x="4" y="4" rx="108" fill="none" stroke="url(#yumeGradient)" stroke-width="3" stroke-opacity="0.3" />
+
+  <g transform="translate(256, 256)">
+    <!-- Back section of Orbital Ring -->
+    <path d="M -170,30 C -190,-20 -90,-80 40,-95 C 130,-105 180,-70 160,-20" fill="none" stroke="url(#ringGradient)" stroke-width="12" stroke-linecap="round" stroke-dasharray="8 6" opacity="0.6" />
+
+    <!-- Futuristic Letter 'Y' with Anime Silhouette Branch -->
+    <g filter="url(#glow)">
+      <!-- Left Stem Branch -->
+      <path d="M -130,-140 C -95,-90 -60,-30 -35,20 L -35,140 C -35,155 -45,165 -60,165 C -75,165 -80,150 -80,140 L -80,40 C -105,-15 -140,-75 -165,-125 C -175,-145 -150,-165 -130,-140 Z" fill="url(#yumeGradient)" />
+
+      <!-- Central Vertical Stem & Right Branch with Anime Character Profile -->
+      <path d="M -35,20 C 5,-40 60,-95 125,-145 C 145,-160 165,-140 150,-120 C 135,-100 100,-60 65,-20 C 85,-40 110,-55 130,-45 C 145,-38 140,-20 125,-15 C 105,-10 80,5 60,30 C 80,25 105,35 100,50 C 95,65 75,65 50,60 L 25,140 C 15,165 -15,165 -35,140 Z" fill="url(#yumeGradient)" />
+
+      <!-- Anime Profile Cutout Details (Eye, Bangs & Hair Sweep) -->
+      <!-- Anime Eye Contour -->
+      <path d="M 65,-55 C 75,-62 88,-62 92,-52 C 86,-50 75,-48 65,-55 Z" fill="url(#accentGradient)" />
+      <!-- Stylized Hair Strand Accent -->
+      <path d="M 40,-85 C 70,-115 110,-130 145,-140 C 120,-115 80,-85 45,-60 Z" fill="url(#accentGradient)" opacity="0.9" />
+    </g>
+
+    <!-- Front section of Orbital Ring -->
+    <path d="M 160,-20 C 140,40 40,95 -90,105 C -150,110 -185,80 -170,30" fill="none" stroke="url(#ringGradient)" stroke-width="14" stroke-linecap="round" />
+
+    <!-- Cosmic 4-Point Star Accent at Top-Right -->
+    <g transform="translate(145, -135)">
+      <path d="M 0,-32 Q 0,0 32,0 Q 0,0 0,32 Q 0,0 -32,0 Q 0,0 0,-32 Z" fill="url(#accentGradient)" />
+      <circle cx="0" cy="0" r="6" fill="#ffffff" />
+    </g>
+
+    <!-- Small Sparkle Star -->
+    <g transform="translate(-130, -145) scale(0.5)">
+      <path d="M 0,-24 Q 0,0 24,0 Q 0,0 0,24 Q 0,0 -24,0 Q 0,0 0,-24 Z" fill="#06b6d4" />
+    </g>
+  </g>
+</svg>

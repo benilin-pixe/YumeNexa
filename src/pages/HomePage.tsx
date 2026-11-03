@@ -10,7 +10,7 @@ import {
   getUpcomingCountdowns,
 } from '../services/anilistService';
 import { getKitsuTrendingAnime, getKitsuPopularAnime } from '../services/kitsuService';
-import { fetchAnimeNews, getOfficialTrailersFeed } from '../services/animeNewsService';
+import { fetchAnimeNews } from '../services/animeNewsService';
 
 import { HeroCarousel } from '../components/home/HeroCarousel';
 import { UpcomingCountdownWidget } from '../components/home/UpcomingCountdownWidget';
@@ -112,14 +112,14 @@ export const HomePage: React.FC<HomePageProps> = ({
         <section className="glass-panel rounded-3xl p-6 border border-violet-500/20 shadow-2xl">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="p-2 rounded-xl bg-violet-600/20 text-violet-400">
+              <div className="p-2 rounded-xl bg-violet-600/20 text-violet-500 dark:text-violet-400">
                 <Tv className="w-5 h-5" />
               </div>
-              <h2 className="text-xl font-bold font-display text-white">Continue Watching</h2>
+              <h2 className="text-xl font-bold font-display text-slate-900 dark:text-white">Continue Watching</h2>
             </div>
             <button
               onClick={() => onNavigateTab('watchlist')}
-              className="text-xs font-semibold text-violet-400 hover:underline"
+              className="text-xs font-semibold text-violet-600 dark:text-violet-400 hover:underline cursor-pointer"
             >
               My Library →
             </button>
@@ -140,17 +140,17 @@ export const HomePage: React.FC<HomePageProps> = ({
                     item.episodeNumber
                   )
                 }
-                className="flex items-center gap-3 p-3 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-violet-500/50 cursor-pointer group transition"
+                className="flex items-center gap-3 p-3 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 hover:border-violet-500/50 cursor-pointer group transition shadow-sm"
               >
                 <img src={item.coverImage} alt={item.animeTitle} className="w-14 h-16 rounded-xl object-cover shrink-0" />
                 <div className="min-w-0 flex-1 space-y-1">
-                  <h4 className="text-xs font-bold text-white group-hover:text-violet-400 truncate transition">
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-violet-500 dark:group-hover:text-violet-400 truncate transition">
                     {item.animeTitle}
                   </h4>
-                  <p className="text-[11px] font-semibold text-violet-400">Episode {item.episodeNumber}</p>
-                  <div className="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
+                  <p className="text-[11px] font-semibold text-violet-600 dark:text-violet-400">Episode {item.episodeNumber}</p>
+                  <div className="w-full bg-slate-200 dark:bg-slate-800 h-1 rounded-full overflow-hidden">
                     <div
-                      className="bg-violet-500 h-full rounded-full"
+                      className="bg-violet-600 dark:bg-violet-500 h-full rounded-full"
                       style={{
                         width: `${Math.min(100, Math.round((item.progressSeconds / item.totalDurationSeconds) * 100))}%`,
                       }}
@@ -226,16 +226,18 @@ export const HomePage: React.FC<HomePageProps> = ({
 
       {/* Editorial News Feed */}
       <section className="space-y-4">
-        <div className="flex items-end justify-between border-b border-slate-800/60 pb-3">
+        <div className="flex items-end justify-between border-b border-slate-200/80 dark:border-slate-800/60 pb-3">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold font-display text-white tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-bold font-display text-slate-900 dark:text-white tracking-tight">
               Latest Anime Editorial & News
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">Industry announcements, studio updates, and adaptation reveals</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Industry announcements, studio updates, and adaptation reveals
+            </p>
           </div>
           <button
             onClick={() => onNavigateTab('news')}
-            className="flex items-center gap-1 text-xs font-semibold text-violet-400 hover:text-violet-300 group transition"
+            className="flex items-center gap-1 text-xs font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-500 dark:hover:text-violet-300 group transition cursor-pointer"
           >
             <span>All News</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />

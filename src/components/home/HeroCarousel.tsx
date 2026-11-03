@@ -17,7 +17,7 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({ items, onSelect, onW
     if (items.length === 0) return;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % items.length);
-    }, 7000);
+    }, 8000);
     return () => clearInterval(interval);
   }, [items]);
 
@@ -33,7 +33,7 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({ items, onSelect, onW
   const nextSlide = () => setCurrentIndex((prev) => (prev + 1) % items.length);
 
   return (
-    <div className="relative w-full h-[480px] sm:h-[560px] lg:h-[620px] rounded-3xl overflow-hidden shadow-2xl border border-slate-800/80 bg-slate-950 group">
+    <div className="relative w-full h-[460px] sm:h-[540px] lg:h-[580px] rounded-3xl overflow-hidden shadow-2xl border border-slate-200/80 dark:border-slate-800/80 bg-slate-950 group">
       {/* Background Image with Layered Gradient */}
       <div className="absolute inset-0">
         <img
@@ -41,65 +41,61 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({ items, onSelect, onW
           alt={title}
           className="w-full h-full object-cover object-center scale-105 filter contrast-[1.05] transition-all duration-700"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/40" />
       </div>
 
       {/* Content Container */}
-      <div className="relative h-full max-w-7xl mx-auto px-6 sm:px-10 flex flex-col justify-end pb-12 sm:pb-16 z-10">
-        <div className="max-w-2xl space-y-4">
-          {/* Metadata Badges */}
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="px-3 py-1 rounded-full bg-violet-600/90 text-white font-semibold shadow-md shadow-violet-600/30">
-              # Featured #{currentIndex + 1}
-            </span>
+      <div className="relative h-full max-w-7xl mx-auto px-6 sm:px-10 flex flex-col justify-end pb-10 sm:pb-14 z-10">
+        <div className="max-w-2xl space-y-3.5">
+          {/* Unboxed Metadata Line */}
+          <div className="flex items-center gap-2 text-xs text-slate-300 font-medium">
+            <span className="text-violet-400 font-bold uppercase tracking-wider">Spotlight #{currentIndex + 1}</span>
             {score && (
-              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-900/80 border border-amber-500/40 text-amber-400 font-semibold backdrop-blur-md">
-                <Star className="w-3.5 h-3.5 fill-amber-400" />
-                {score} / 10
-              </span>
+              <>
+                <span aria-hidden="true">·</span>
+                <span className="flex items-center gap-1 text-amber-400 font-bold">
+                  <Star className="w-3.5 h-3.5 fill-amber-400" />
+                  {score}
+                </span>
+              </>
             )}
             {current.format && (
-              <span className="px-2.5 py-1 rounded-full bg-slate-900/80 border border-slate-700 text-slate-300 font-medium backdrop-blur-md uppercase">
-                {current.format}
-              </span>
+              <>
+                <span aria-hidden="true">·</span>
+                <span>{current.format}</span>
+              </>
             )}
             {current.seasonYear && (
-              <span className="px-2.5 py-1 rounded-full bg-slate-900/80 border border-slate-700 text-slate-300 font-medium backdrop-blur-md">
-                {current.season} {current.seasonYear}
-              </span>
+              <>
+                <span aria-hidden="true">·</span>
+                <span>{current.season} {current.seasonYear}</span>
+              </>
             )}
           </div>
 
           {/* Title */}
-          <h1 className="text-3xl sm:text-5xl font-black font-display tracking-tight text-white line-clamp-2 drop-shadow-lg leading-tight">
+          <h1 className="text-3xl sm:text-5xl font-black font-display tracking-tight text-white line-clamp-2 drop-shadow-md leading-tight">
             {title}
           </h1>
 
-          {/* Genres */}
+          {/* Genres Line */}
           {current.genres && (
-            <div className="flex flex-wrap gap-2 pt-1">
-              {current.genres.slice(0, 4).map((genre) => (
-                <span
-                  key={genre}
-                  className="px-2.5 py-0.5 rounded-md bg-slate-800/60 border border-slate-700/60 text-slate-300 text-xs font-medium"
-                >
-                  {genre}
-                </span>
-              ))}
+            <div className="text-xs text-slate-400 font-medium">
+              {current.genres.slice(0, 4).join(' · ')}
             </div>
           )}
 
           {/* Synopsis Preview */}
-          <p className="text-sm text-slate-300 line-clamp-2 sm:line-clamp-3 leading-relaxed drop-shadow max-w-xl">
+          <p className="text-xs sm:text-sm text-slate-300 line-clamp-2 sm:line-clamp-3 leading-relaxed max-w-xl">
             {current.description?.replace(/<[^>]*>?/gm, '')}
           </p>
 
           {/* Action CTAs */}
-          <div className="flex flex-wrap items-center gap-3 pt-4">
+          <div className="flex flex-wrap items-center gap-3 pt-2">
             <button
               onClick={() => onWatch(current)}
-              className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold text-sm shadow-xl shadow-violet-600/30 hover:scale-105 active:scale-95 transition"
+              className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs sm:text-sm shadow-xl shadow-violet-600/30 hover:scale-105 active:scale-95 transition cursor-pointer"
             >
               <Play className="w-4 h-4 fill-white" />
               Watch Episode 1
@@ -107,7 +103,7 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({ items, onSelect, onW
 
             <button
               onClick={() => onSelect(current)}
-              className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-slate-200 font-medium text-sm backdrop-blur-md transition"
+              className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-slate-200 font-semibold text-xs sm:text-sm backdrop-blur-md transition cursor-pointer"
             >
               <Info className="w-4 h-4 text-violet-400" />
               View Details
@@ -121,9 +117,9 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({ items, onSelect, onW
                   updateAnimeStatus(current.id, title, current.coverImage?.large || '', 'PLANNING', 0, current.episodes || 0);
                 }
               }}
-              className={`p-3 rounded-2xl border text-sm backdrop-blur-md transition ${
+              className={`p-3 rounded-2xl border text-xs sm:text-sm backdrop-blur-md transition cursor-pointer ${
                 watchlistEntry
-                  ? 'bg-emerald-600/90 border-emerald-500 text-white'
+                  ? 'bg-emerald-600 border-emerald-500 text-white'
                   : 'bg-slate-900/80 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
               title={watchlistEntry ? 'In Watchlist' : 'Add to Watchlist'}
@@ -134,17 +130,17 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({ items, onSelect, onW
         </div>
       </div>
 
-      {/* Navigation Controls */}
+      {/* Navigation Arrows */}
       <button
         onClick={prevSlide}
-        className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-slate-900/60 border border-slate-800 text-slate-300 opacity-0 group-hover:opacity-100 hover:bg-violet-600 hover:text-white transition backdrop-blur-md z-20"
+        className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-slate-900/60 border border-slate-800 text-slate-300 opacity-0 group-hover:opacity-100 hover:bg-violet-600 hover:text-white transition backdrop-blur-md z-20 cursor-pointer"
       >
         <ChevronLeft className="w-5 h-5" />
       </button>
 
       <button
         onClick={nextSlide}
-        className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-slate-900/60 border border-slate-800 text-slate-300 opacity-0 group-hover:opacity-100 hover:bg-violet-600 hover:text-white transition backdrop-blur-md z-20"
+        className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-slate-900/60 border border-slate-800 text-slate-300 opacity-0 group-hover:opacity-100 hover:bg-violet-600 hover:text-white transition backdrop-blur-md z-20 cursor-pointer"
       >
         <ChevronRight className="w-5 h-5" />
       </button>
@@ -155,7 +151,7 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({ items, onSelect, onW
           <button
             key={idx}
             onClick={() => setCurrentIndex(idx)}
-            className={`h-1.5 rounded-full transition-all ${
+            className={`h-1.5 rounded-full transition-all cursor-pointer ${
               idx === currentIndex ? 'w-8 bg-violet-500' : 'w-2 bg-slate-700 hover:bg-slate-500'
             }`}
           />

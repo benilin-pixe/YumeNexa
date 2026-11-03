@@ -3,7 +3,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
+    // Global Helpers
     function isSignedIn() {
       return request.auth != null;
     }
@@ -11,8 +11,9 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.email == 'benilin76@gmail.com' ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-        exists(/databases/$(database)/documents/adminRoles/$(request.auth.uid))
+        exists(/databases/$(database)/documents/adminRoles/$(request.auth.uid)) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
       );
     }
 
@@ -21,10 +22,23 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // User profiles
+    // User profiles (with privilege escalation protection)
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow create, update: if request.auth.uid == userId || isAdmin();
+      allow create: if isSignedIn() && (
+        request.auth.uid == userId && (
+          !('role' in request.resource.data) ||
+          request.resource.data.role == 'user' ||
+          isAdmin()
+        )
+      );
+      allow update: if isSignedIn() && (
+        (request.auth.uid == userId && (
+          !('role' in request.resource.data) ||
+          request.resource.data.role == resource.data.role
+        )) ||
+        isAdmin()
+      );
       allow delete: if isAdmin();
     }
 
@@ -33,13 +47,19 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
-    // Admin Audit Logs
+    // Admin Audit Logs (Immutable once written)
     match /adminAuditLogs/{logId} {
       allow read, create: if isAdmin();
-      allow update, delete: if false; // Audit logs are immutable
+      allow update, delete: if false;
     }
 
-    // System Health & Monitoring
+    // Site Configuration & Featured Content
+    match /siteConfig/{configId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // System Health & Diagnostics
     match /systemHealth/{healthId} {
       allow read: if true;
       allow write: if isAdmin();
@@ -53,7 +73,9 @@ service cloud.firestore {
 
     // Playback Metrics
     match /playbackMetrics/{metricId} {
-      allow read, write: if isSignedIn();
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn();
+      allow delete: if isAdmin();
     }
 
     // Watchlists
@@ -70,7 +92,7 @@ service cloud.firestore {
       allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
-    // Announcements
+    // Public Broadcast Announcements
     match /announcements/{announcementId} {
       allow read: if true;
       allow write: if isAdmin();
@@ -84,7 +106,7 @@ service cloud.firestore {
 
     // News Sources
     match /news_sources/{sourceId} {
-      allow read: if isAdmin();
+      allow read: if true;
       allow write: if isAdmin();
     }
   }

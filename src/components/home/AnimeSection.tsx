@@ -25,16 +25,18 @@ export const AnimeSection: React.FC<AnimeSectionProps> = ({
 }) => {
   return (
     <section className="space-y-4 my-8">
-      <div className="flex items-end justify-between border-b border-slate-800/60 pb-3">
+      <div className="flex items-end justify-between border-b border-slate-200/80 dark:border-slate-800/80 pb-3">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold font-display text-white tracking-tight">{title}</h2>
-          {subtitle && <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>}
+          <h2 className="text-xl sm:text-2xl font-bold font-display text-slate-900 dark:text-white tracking-tight">
+            {title}
+          </h2>
+          {subtitle && <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{subtitle}</p>}
         </div>
 
         {onViewAll && (
           <button
             onClick={onViewAll}
-            className="flex items-center gap-1 text-xs font-semibold text-violet-400 hover:text-violet-300 group transition"
+            className="flex items-center gap-1 text-xs font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-500 dark:hover:text-violet-300 group transition cursor-pointer"
           >
             <span>View All</span>
             <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
@@ -49,7 +51,7 @@ export const AnimeSection: React.FC<AnimeSectionProps> = ({
           ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="p-8 text-center rounded-2xl bg-slate-900/30 border border-slate-800/60 text-slate-400 text-sm">
+        <div className="p-8 text-center rounded-2xl bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800/60 text-slate-500 dark:text-slate-400 text-sm">
           No anime available in this category.
         </div>
       ) : (

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bookmark, Play, Check, Trash2, History, Tv, User as UserIcon, Bell } from 'lucide-react';
+import { Bookmark, Play, Trash2, Bell } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useWatchlist } from '../contexts/WatchlistContext';
 import { WatchlistStatus } from '../types/user';
@@ -31,17 +31,17 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({
 
   if (!currentUser) {
     return (
-      <div className="glass-panel rounded-3xl p-12 text-center my-12 space-y-4 max-w-md mx-auto border border-slate-800">
-        <div className="p-4 rounded-full bg-violet-600/20 text-violet-400 w-16 h-16 flex items-center justify-center mx-auto">
+      <div className="glass-panel rounded-3xl p-12 text-center my-12 space-y-4 max-w-md mx-auto border border-slate-200 dark:border-slate-800">
+        <div className="p-4 rounded-full bg-violet-600/20 text-violet-500 dark:text-violet-400 w-16 h-16 flex items-center justify-center mx-auto">
           <Bookmark className="w-8 h-8" />
         </div>
-        <h2 className="text-xl font-bold font-display text-white">Sign In to View Watchlist</h2>
-        <p className="text-xs text-slate-400 leading-relaxed">
+        <h2 className="text-xl font-bold font-display text-slate-900 dark:text-white">Sign In to View Watchlist</h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
           Sync your favourite anime, current episode progress, and custom library across all your devices seamlessly.
         </p>
         <button
           onClick={onOpenAuth}
-          className="px-6 py-3 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold text-xs shadow-xl shadow-violet-600/30 hover:scale-105 transition"
+          className="px-6 py-3 rounded-2xl bg-violet-600 text-white font-bold text-xs shadow-xl shadow-violet-600/30 hover:scale-105 transition cursor-pointer"
         >
           Sign In or Register
         </button>
@@ -54,24 +54,26 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({
   return (
     <div className="space-y-8 pb-16">
       {/* Header & Quick Stats */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 dark:border-slate-800/80 pb-6">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <Bookmark className="w-6 h-6 text-violet-400" />
-            <h1 className="text-3xl font-black font-display text-white">My Personal Anime Library</h1>
+            <Bookmark className="w-6 h-6 text-violet-500 dark:text-violet-400" />
+            <h1 className="text-3xl font-black font-display text-slate-900 dark:text-white">My Personal Anime Library</h1>
           </div>
-          <p className="text-xs text-slate-400">Track and manage your watched episodes and future watchlist</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Track and manage your watched episodes and future watchlist
+          </p>
         </div>
 
-        {/* Stats Pills */}
+        {/* Stats Summary */}
         <div className="flex items-center gap-3">
-          <div className="px-4 py-2 rounded-2xl bg-slate-900 border border-slate-800 text-xs">
-            <span className="text-slate-400 block font-semibold text-[10px] uppercase">Watchlist Items</span>
-            <span className="text-white font-bold text-sm">{watchlist.length}</span>
+          <div className="px-4 py-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
+            <span className="text-slate-500 dark:text-slate-400 block font-semibold text-[10px] uppercase">Watchlist Items</span>
+            <span className="text-slate-900 dark:text-white font-bold text-sm">{watchlist.length}</span>
           </div>
-          <div className="px-4 py-2 rounded-2xl bg-slate-900 border border-slate-800 text-xs">
-            <span className="text-slate-400 block font-semibold text-[10px] uppercase">History Recorded</span>
-            <span className="text-white font-bold text-sm">{watchHistory.length}</span>
+          <div className="px-4 py-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
+            <span className="text-slate-500 dark:text-slate-400 block font-semibold text-[10px] uppercase">History Recorded</span>
+            <span className="text-slate-900 dark:text-white font-bold text-sm">{watchHistory.length}</span>
           </div>
         </div>
       </div>
@@ -89,20 +91,14 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2.5 rounded-2xl text-xs font-semibold shrink-0 transition flex items-center gap-2 border ${
+              className={`px-4 py-2.5 rounded-2xl text-xs font-semibold shrink-0 transition flex items-center gap-2 border cursor-pointer ${
                 isActive
-                  ? 'bg-violet-600/30 border-violet-500 text-violet-300'
-                  : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white'
+                  ? 'bg-violet-600/10 dark:bg-violet-600/30 border-violet-500 text-violet-600 dark:text-violet-300'
+                  : 'bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <span>{tab.label}</span>
-              <span
-                className={`px-2 py-0.5 rounded-full text-[10px] ${
-                  isActive ? 'bg-violet-500/40 text-white' : 'bg-slate-800 text-slate-400'
-                }`}
-              >
-                {count}
-              </span>
+              <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">({count})</span>
             </button>
           );
         })}
@@ -111,8 +107,8 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({
       {/* Tab Content */}
       {activeTab === 'HISTORY' ? (
         watchHistory.length === 0 ? (
-          <div className="glass-panel rounded-3xl p-12 text-center text-xs text-slate-400 space-y-2">
-            <p className="text-sm font-semibold text-white">No watch history recorded yet.</p>
+          <div className="glass-panel rounded-3xl p-12 text-center text-xs text-slate-500 dark:text-slate-400 space-y-2">
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">No watch history recorded yet.</p>
             <p>Start watching any episode to automatically track your playback history.</p>
           </div>
         ) : (
@@ -131,26 +127,26 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({
                     item.episodeNumber
                   )
                 }
-                className="glass-panel p-4 rounded-3xl border border-slate-800/80 hover:border-violet-500/50 cursor-pointer group transition flex items-center gap-3"
+                className="glass-panel p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 hover:border-violet-500/50 cursor-pointer group transition flex items-center gap-3"
               >
                 <img src={item.coverImage} alt={item.animeTitle} className="w-16 h-20 rounded-xl object-cover shrink-0 bg-slate-950" />
                 <div className="min-w-0 flex-1 space-y-1">
-                  <h4 className="text-xs font-bold text-white group-hover:text-violet-400 truncate transition">
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-violet-500 dark:group-hover:text-violet-400 truncate transition">
                     {item.animeTitle}
                   </h4>
-                  <p className="text-[11px] font-semibold text-violet-400">Episode {item.episodeNumber}</p>
+                  <p className="text-[11px] font-semibold text-violet-600 dark:text-violet-400">Episode {item.episodeNumber}</p>
                   <p className="text-[10px] text-slate-500">
                     {new Date(item.lastWatchedAt).toLocaleDateString()}
                   </p>
                 </div>
-                <Play className="w-5 h-5 text-violet-400 shrink-0 group-hover:scale-110 transition" />
+                <Play className="w-5 h-5 text-violet-500 dark:text-violet-400 shrink-0 group-hover:scale-110 transition" />
               </div>
             ))}
           </div>
         )
       ) : filteredItems.length === 0 ? (
-        <div className="glass-panel rounded-3xl p-12 text-center text-xs text-slate-400 space-y-2">
-          <p className="text-sm font-semibold text-white">No anime in this status folder.</p>
+        <div className="glass-panel rounded-3xl p-12 text-center text-xs text-slate-500 dark:text-slate-400 space-y-2">
+          <p className="text-sm font-semibold text-slate-900 dark:text-white">No anime in this status folder.</p>
           <p>Add titles to your watchlist from the Explore page or Anime cards.</p>
         </div>
       ) : (
@@ -158,7 +154,7 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({
           {filteredItems.map((item) => (
             <div
               key={item.animeId}
-              className="glass-panel p-4 rounded-3xl border border-slate-800/80 space-y-3"
+              className="glass-panel p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 space-y-3"
             >
               <div className="flex gap-3">
                 <img
@@ -185,12 +181,12 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({
                         genres: [],
                       })
                     }
-                    className="text-sm font-bold text-white hover:text-violet-400 cursor-pointer truncate transition leading-tight"
+                    className="text-sm font-bold text-slate-900 dark:text-white hover:text-violet-500 dark:hover:text-violet-400 cursor-pointer truncate transition leading-tight"
                   >
                     {item.title}
                   </h3>
 
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
                     Progress: Ep {item.progress} / {item.totalEpisodes || '?'}
                   </p>
 
@@ -207,7 +203,7 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({
                           Math.max(1, item.progress)
                         )
                       }
-                      className="px-3 py-1 rounded-xl bg-violet-600 text-white font-semibold text-[11px] hover:bg-violet-500 transition flex items-center gap-1"
+                      className="px-3 py-1 rounded-xl bg-violet-600 text-white font-semibold text-[11px] hover:bg-violet-500 transition flex items-center gap-1 cursor-pointer"
                     >
                       <Play className="w-3 h-3 fill-white" />
                       Play Ep {Math.max(1, item.progress)}
@@ -217,7 +213,7 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({
               </div>
 
               {/* Quick Status Adjust & Release Alerts & Remove */}
-              <div className="flex items-center justify-between pt-2 border-t border-slate-800/60 text-xs">
+              <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-slate-800/60 text-xs">
                 <select
                   value={item.status}
                   onChange={(e) =>
@@ -230,7 +226,7 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({
                       item.totalEpisodes
                     )
                   }
-                  className="bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1 text-[11px] font-medium text-slate-300 focus:outline-none"
+                  className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1 text-[11px] font-medium text-slate-800 dark:text-slate-300 focus:outline-none cursor-pointer"
                 >
                   <option value="WATCHING">Watching</option>
                   <option value="PLANNING">Plan to Watch</option>
@@ -242,10 +238,10 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => toggleNotifications(item.animeId, !item.notificationsEnabled)}
-                    className={`p-1.5 rounded-xl transition flex items-center gap-1 ${
+                    className={`p-1.5 rounded-xl transition flex items-center gap-1 cursor-pointer ${
                       item.notificationsEnabled
-                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                        : 'text-slate-500 hover:text-slate-300 bg-slate-950/60 border border-slate-800'
+                        ? 'bg-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/30'
+                        : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 bg-slate-100 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800'
                     }`}
                     title={item.notificationsEnabled ? 'Release Alerts ON' : 'Release Alerts OFF'}
                   >
@@ -254,7 +250,7 @@ export const WatchlistPage: React.FC<WatchlistPageProps> = ({
 
                   <button
                     onClick={() => removeItem(item.animeId)}
-                    className="p-1.5 text-slate-500 hover:text-rose-400 transition"
+                    className="p-1.5 text-slate-400 hover:text-rose-500 transition cursor-pointer"
                     title="Remove from Watchlist"
                   >
                     <Trash2 className="w-4 h-4" />

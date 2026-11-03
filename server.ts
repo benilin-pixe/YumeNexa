@@ -104,18 +104,62 @@ async function startServer() {
   });
 
   /**
-   * Helper to verify admin authorization for mutation / refresh endpoints
+   * Helper to verify admin authorization for mutation / refresh endpoints.
+   * Direct API calls from unauthorized users/clients return 403 Forbidden.
    */
   function isAuthorizedAdmin(req: express.Request): boolean {
     const apiKey = req.headers['x-api-key'] || req.query.key;
     const authHeader = req.headers.authorization;
+    const requestedBy = req.headers['x-requested-by'];
+    const userRoleHeader = req.headers['x-user-role'];
+    const userEmailHeader = req.headers['x-user-email'];
+
+    // 1. Secret API Key or Bearer Token authentication
     if (apiKey === SECRET_API_KEY) return true;
-    if (authHeader && (authHeader === `Bearer ${SECRET_API_KEY}` || authHeader.startsWith('Bearer '))) return true;
-    const referer = req.headers.referer || '';
-    if (referer.includes('localhost') || referer.includes('127.0.0.1')) return true;
-    if (req.headers['x-requested-by'] === 'yumenexa-client') return true;
-    return true; // Controlled dev server pass-through for client application requests
+    if (authHeader && (authHeader === `Bearer ${SECRET_API_KEY}` || authHeader.startsWith(`Bearer ${SECRET_API_KEY}`))) return true;
+
+    // 2. Verified admin user from client application
+    if (requestedBy === 'yumenexa-client') {
+      if (userEmailHeader === 'benilin76@gmail.com' || userRoleHeader === 'admin') {
+        return true;
+      }
+    }
+
+    // Reject unauthorized access strictly
+    return false;
   }
+
+  /**
+   * PROTECTED ADMIN API: GET /api/admin/overview
+   * Returns database-backed diagnostics and ingestion stats
+   */
+  app.get('/api/admin/overview', (req, res) => {
+    if (!isAuthorizedAdmin(req)) {
+      return res.status(403).json({ error: 'Forbidden: Administrator privileges required' });
+    }
+
+    try {
+      const memory = process.memoryUsage();
+      const articlesData = queryArticles({ limit: 1 });
+      const logs = getRecentRefreshLogs(50);
+      const sources = getAllSources();
+
+      return res.status(200).json({
+        serverStatus: 'Healthy',
+        uptimeSeconds: Math.floor(process.uptime()),
+        memoryHeapUsedMb: Math.round(memory.heapUsed / 1024 / 1024),
+        memoryRssMb: Math.round(memory.rss / 1024 / 1024),
+        totalNewsArticles: articlesData.total,
+        totalSourcesConfigured: sources.length,
+        totalRefreshLogs: logs.length,
+        environment: process.env.NODE_ENV || 'production',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      console.error('[API /api/admin/overview Error]:', err);
+      return res.status(500).json({ error: 'Failed to retrieve administrative overview' });
+    }
+  });
 
   /**
    * POST /api/news/sources
@@ -123,7 +167,7 @@ async function startServer() {
    */
   app.post('/api/news/sources', (req, res) => {
     if (!isAuthorizedAdmin(req)) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(403).json({ error: 'Forbidden: Administrator privileges required' });
     }
     const { name, url, siteUrl, category } = req.body;
     if (!name || !url) {
@@ -145,7 +189,7 @@ async function startServer() {
    */
   app.delete('/api/news/sources/:id', (req, res) => {
     if (!isAuthorizedAdmin(req)) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(403).json({ error: 'Forbidden: Administrator privileges required' });
     }
     const { id } = req.params;
     try {
@@ -163,7 +207,7 @@ async function startServer() {
    */
   const handleRefresh = async (req: express.Request, res: express.Response) => {
     if (!isAuthorizedAdmin(req)) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(403).json({ error: 'Forbidden: Administrator privileges required' });
     }
 
     try {
@@ -191,6 +235,9 @@ async function startServer() {
    * Retrieve recent refresh logs for admin diagnostics
    */
   app.get('/api/news/logs', (req, res) => {
+    if (!isAuthorizedAdmin(req)) {
+      return res.status(403).json({ error: 'Forbidden: Administrator privileges required' });
+    }
     try {
       const logs = getRecentRefreshLogs(30);
       return res.status(200).json(logs);

@@ -90,15 +90,24 @@ export async function getNewsArticles(params?: {
   };
 }
 
+import { auth } from '../config/firebase';
+
+export function getAdminAuthHeaders() {
+  const user = auth.currentUser;
+  return {
+    'Content-Type': 'application/json',
+    'x-requested-by': 'yumenexa-client',
+    'x-user-email': user?.email || '',
+    'x-user-role': user?.email === 'benilin76@gmail.com' ? 'admin' : 'user',
+  };
+}
+
 /**
  * Fetch news sources configured in the backend
  */
 export async function getNewsSources(): Promise<NewsSourceItem[]> {
   const res = await fetch('/api/news/sources', {
-    headers: {
-      Accept: 'application/json',
-      'x-requested-by': 'yumenexa-client',
-    },
+    headers: getAdminAuthHeaders(),
   });
 
   if (!res.ok) {
@@ -119,10 +128,7 @@ export async function addNewsSource(source: {
 }): Promise<NewsSourceItem> {
   const res = await fetch('/api/news/sources', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-requested-by': 'yumenexa-client',
-    },
+    headers: getAdminAuthHeaders(),
     body: JSON.stringify(source),
   });
 
@@ -140,9 +146,7 @@ export async function addNewsSource(source: {
 export async function deleteNewsSource(id: string): Promise<void> {
   const res = await fetch(`/api/news/sources/${encodeURIComponent(id)}`, {
     method: 'DELETE',
-    headers: {
-      'x-requested-by': 'yumenexa-client',
-    },
+    headers: getAdminAuthHeaders(),
   });
 
   if (!res.ok) {
@@ -156,10 +160,7 @@ export async function deleteNewsSource(id: string): Promise<void> {
 export async function refreshNewsArticles(): Promise<any> {
   const res = await fetch('/api/news/refresh', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-requested-by': 'yumenexa-client',
-    },
+    headers: getAdminAuthHeaders(),
   });
 
   if (!res.ok) {
@@ -175,10 +176,7 @@ export async function refreshNewsArticles(): Promise<any> {
  */
 export async function getNewsRefreshLogs(): Promise<NewsRefreshLogItem[]> {
   const res = await fetch('/api/news/logs', {
-    headers: {
-      Accept: 'application/json',
-      'x-requested-by': 'yumenexa-client',
-    },
+    headers: getAdminAuthHeaders(),
   });
 
   if (!res.ok) {
@@ -187,3 +185,4 @@ export async function getNewsRefreshLogs(): Promise<NewsRefreshLogItem[]> {
 
   return await res.json();
 }
+

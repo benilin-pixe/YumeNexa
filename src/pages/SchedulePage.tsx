@@ -73,30 +73,30 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onSelectAnime, onWat
   return (
     <div className="space-y-8 pb-16">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 dark:border-slate-800/80 pb-6">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <CalendarIcon className="w-6 h-6 text-violet-400" />
-            <h1 className="text-3xl font-black font-display text-white">Live Release Schedule</h1>
+            <CalendarIcon className="w-6 h-6 text-violet-500 dark:text-violet-400" />
+            <h1 className="text-3xl font-black font-display text-slate-900 dark:text-white">Live Release Schedule</h1>
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Real-time Japanese broadcasting schedule and upcoming episode release countdowns
           </p>
         </div>
 
         {/* Controls */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-slate-300">
-            <Globe className="w-3.5 h-3.5 text-violet-400" />
-            <span>TZ:</span>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300">
+            <Globe className="w-3.5 h-3.5 text-violet-500 dark:text-violet-400" />
+            <span>Timezone:</span>
             <select
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
-              className="bg-transparent text-white font-semibold focus:outline-none cursor-pointer"
+              className="bg-transparent text-slate-900 dark:text-white font-semibold focus:outline-none cursor-pointer"
             >
-              <option value="local" className="bg-slate-900">Local Browser Time</option>
-              <option value="jst" className="bg-slate-900">Japan Standard Time (JST)</option>
-              <option value="utc" className="bg-slate-900">UTC Time</option>
+              <option value="local" className="bg-white dark:bg-slate-900">Local Browser Time</option>
+              <option value="jst" className="bg-white dark:bg-slate-900">Japan Standard Time (JST)</option>
+              <option value="utc" className="bg-white dark:bg-slate-900">UTC Time</option>
             </select>
           </div>
         </div>
@@ -111,14 +111,14 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onSelectAnime, onWat
             <button
               key={d.id}
               onClick={() => setActiveDay(d.id)}
-              className={`px-5 py-3 rounded-2xl text-xs font-bold transition shrink-0 flex flex-col items-center gap-0.5 border ${
+              className={`px-5 py-3 rounded-2xl text-xs font-bold transition shrink-0 flex flex-col items-center gap-0.5 border cursor-pointer ${
                 isActive
-                  ? 'bg-gradient-to-tr from-violet-600 to-indigo-600 text-white border-violet-400 shadow-lg shadow-violet-600/30'
-                  : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white'
+                  ? 'bg-violet-600 text-white border-violet-500 shadow-lg shadow-violet-600/30'
+                  : 'bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <span>{d.label}</span>
-              {isToday && <span className="text-[9px] uppercase tracking-wider text-cyan-300">Today</span>}
+              {isToday && <span className="text-[9px] uppercase tracking-wider text-cyan-500 dark:text-cyan-300">Today</span>}
             </button>
           );
         })}
@@ -126,25 +126,27 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onSelectAnime, onWat
 
       {/* Search Input */}
       <div className="relative max-w-md">
-        <Search className="w-4 h-4 text-violet-400 absolute left-4 top-1/2 -translate-y-1/2" />
+        <Search className="w-4 h-4 text-violet-500 dark:text-violet-400 absolute left-4 top-1/2 -translate-y-1/2" />
         <input
           type="text"
           placeholder="Filter scheduled anime title..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-11 pr-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 transition"
+          className="w-full pl-11 pr-4 py-2.5 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-violet-500 transition"
         />
       </div>
 
       {/* Schedule Items List */}
       {loading ? (
-        <div className="p-12 text-center text-xs text-slate-400 space-y-3 glass-panel rounded-3xl">
+        <div className="p-12 text-center text-xs text-slate-500 dark:text-slate-400 space-y-3 glass-panel rounded-3xl">
           <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto" />
           <p>Fetching broadcasting schedules from AniList...</p>
         </div>
       ) : filteredSchedule.length === 0 ? (
-        <div className="glass-panel rounded-3xl p-12 text-center text-xs text-slate-400 space-y-2">
-          <p className="text-sm font-semibold text-white">No scheduled releases found for {DAYS_OF_WEEK[activeDay].label}.</p>
+        <div className="glass-panel rounded-3xl p-12 text-center text-xs text-slate-500 dark:text-slate-400 space-y-2">
+          <p className="text-sm font-semibold text-slate-900 dark:text-white">
+            No scheduled releases found for {DAYS_OF_WEEK[activeDay].label}.
+          </p>
           <p>Check back later or select another day of the week.</p>
         </div>
       ) : (
@@ -171,7 +173,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onSelectAnime, onWat
               <div
                 key={item.id}
                 onClick={() => onSelectAnime(media)}
-                className="glass-panel p-4 rounded-3xl border border-slate-800/80 hover:border-violet-500/50 cursor-pointer group transition space-y-3"
+                className="glass-panel p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 hover:border-violet-500/50 cursor-pointer group transition space-y-3"
               >
                 <div className="flex gap-3">
                   <img
@@ -182,45 +184,45 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onSelectAnime, onWat
 
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex items-center justify-between text-[10px]">
-                      <span className="px-2 py-0.5 rounded-full bg-violet-600/20 text-violet-300 font-bold border border-violet-500/30">
+                      <span className="px-2 py-0.5 rounded-full bg-violet-600/20 text-violet-600 dark:text-violet-300 font-bold border border-violet-500/30">
                         Episode {item.episode}
                       </span>
-                      <span className="text-slate-400 font-mono">{timeString}</span>
+                      <span className="text-slate-500 dark:text-slate-400 font-mono">{timeString}</span>
                     </div>
 
-                    <h3 className="text-sm font-bold text-white group-hover:text-violet-400 line-clamp-2 transition leading-tight">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-violet-500 dark:group-hover:text-violet-400 line-clamp-2 transition leading-tight">
                       {title}
                     </h3>
 
-                    <p className="text-[11px] text-slate-400 line-clamp-1">
-                      {media.genres?.slice(0, 2).join(' • ')}
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1">
+                      {media.genres?.slice(0, 2).join(' · ')}
                     </p>
                   </div>
                 </div>
 
                 {/* Countdown Status Box */}
                 {isAiringInFuture ? (
-                  <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-800/60 text-center font-mono text-[10px]">
-                    <div className="bg-slate-950 py-1 rounded-xl border border-slate-800">
-                      <span className="font-extrabold text-violet-300 text-xs">{days}</span>
+                  <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-200/60 dark:border-slate-800/60 text-center font-mono text-[10px]">
+                    <div className="bg-slate-100 dark:bg-slate-950 py-1 rounded-xl border border-slate-200 dark:border-slate-800">
+                      <span className="font-extrabold text-violet-600 dark:text-violet-300 text-xs">{days}</span>
                       <span className="block text-[8px] text-slate-500 uppercase">Days</span>
                     </div>
-                    <div className="bg-slate-950 py-1 rounded-xl border border-slate-800">
-                      <span className="font-extrabold text-violet-300 text-xs">{hours}</span>
+                    <div className="bg-slate-100 dark:bg-slate-950 py-1 rounded-xl border border-slate-200 dark:border-slate-800">
+                      <span className="font-extrabold text-violet-600 dark:text-violet-300 text-xs">{hours}</span>
                       <span className="block text-[8px] text-slate-500 uppercase">Hours</span>
                     </div>
-                    <div className="bg-slate-950 py-1 rounded-xl border border-slate-800">
-                      <span className="font-extrabold text-violet-300 text-xs">{minutes}</span>
+                    <div className="bg-slate-100 dark:bg-slate-950 py-1 rounded-xl border border-slate-200 dark:border-slate-800">
+                      <span className="font-extrabold text-violet-600 dark:text-violet-300 text-xs">{minutes}</span>
                       <span className="block text-[8px] text-slate-500 uppercase">Mins</span>
                     </div>
-                    <div className="bg-slate-950 py-1 rounded-xl border border-slate-800">
-                      <span className="font-extrabold text-violet-300 text-xs">{seconds}</span>
+                    <div className="bg-slate-100 dark:bg-slate-950 py-1 rounded-xl border border-slate-200 dark:border-slate-800">
+                      <span className="font-extrabold text-violet-600 dark:text-violet-300 text-xs">{seconds}</span>
                       <span className="block text-[8px] text-slate-500 uppercase">Secs</span>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-800/60 text-xs">
-                    <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-slate-800/60 text-xs">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5" />
                       Aired / Available Now
                     </span>
@@ -229,7 +231,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onSelectAnime, onWat
                         e.stopPropagation();
                         onWatchAnime(media, item.episode);
                       }}
-                      className="px-3 py-1 rounded-xl bg-violet-600 text-white font-semibold text-[11px] hover:bg-violet-500 transition flex items-center gap-1"
+                      className="px-3 py-1 rounded-xl bg-violet-600 text-white font-semibold text-[11px] hover:bg-violet-500 transition flex items-center gap-1 cursor-pointer"
                     >
                       <Play className="w-3 h-3 fill-white" />
                       Watch
