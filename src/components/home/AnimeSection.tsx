@@ -23,20 +23,30 @@ export const AnimeSection: React.FC<AnimeSectionProps> = ({
   onWatch,
   onViewAll,
 }) => {
+  // Format title to highlight the last word with gradient text
+  const titleWords = title.split(' ');
+  const mainTitle = titleWords.length > 1 ? titleWords.slice(0, -1).join(' ') : title;
+  const highlightWord = titleWords.length > 1 ? titleWords[titleWords.length - 1] : '';
+
   return (
-    <section className="space-y-4 my-8">
-      <div className="flex items-end justify-between border-b border-slate-200/80 dark:border-slate-800/80 pb-3">
+    <section className="space-y-4 my-10">
+      <div className="flex items-end justify-between border-b border-[#2a243a] pb-3">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold font-display text-slate-900 dark:text-white tracking-tight">
-            {title}
+          <h2 className="text-xl sm:text-2xl font-extrabold font-display text-[#f2effc] tracking-tight">
+            {mainTitle}{' '}
+            {highlightWord && (
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-indigo-300 to-sky-400">
+                {highlightWord}
+              </span>
+            )}
           </h2>
-          {subtitle && <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{subtitle}</p>}
+          {subtitle && <p className="text-xs text-[#a09cb0] mt-1">{subtitle}</p>}
         </div>
 
         {onViewAll && (
           <button
             onClick={onViewAll}
-            className="flex items-center gap-1 text-xs font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-500 dark:hover:text-violet-300 group transition cursor-pointer"
+            className="flex items-center gap-1 text-xs font-semibold text-purple-400 hover:text-purple-300 group transition cursor-pointer"
           >
             <span>View All</span>
             <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
@@ -45,19 +55,23 @@ export const AnimeSection: React.FC<AnimeSectionProps> = ({
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div className="no-scrollbar flex gap-4 overflow-x-auto pb-4 scroll-smooth">
           {Array.from({ length: 6 }).map((_, i) => (
-            <SkeletonCard key={i} />
+            <div key={i} className="w-[160px] sm:w-[190px] shrink-0">
+              <SkeletonCard />
+            </div>
           ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="p-8 text-center rounded-2xl bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800/60 text-slate-500 dark:text-slate-400 text-sm">
+        <div className="p-8 text-center rounded-xl bg-[#161224] border border-[#2a243a] text-[#a09cb0] text-sm">
           No anime available in this category.
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div className="no-scrollbar flex gap-4 overflow-x-auto pb-4 scroll-smooth focus:outline-none">
           {items.map((anime) => (
-            <AnimeCard key={anime.id} anime={anime} onSelect={onSelect} onWatch={onWatch} />
+            <div key={anime.id} className="w-[160px] sm:w-[190px] shrink-0">
+              <AnimeCard anime={anime} onSelect={onSelect} onWatch={onWatch} />
+            </div>
           ))}
         </div>
       )}

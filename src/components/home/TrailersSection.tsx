@@ -52,14 +52,14 @@ export const TrailersSection: React.FC<TrailersSectionProps> = ({ onSelectAnime,
 
   if (loading) {
     return (
-      <section className="my-12 glass-panel rounded-3xl p-6 border border-slate-800/80 shadow-2xl space-y-4">
-        <div className="flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-violet-600/20 text-violet-400">
+      <section className="my-12 bg-[#161224] rounded-xl p-6 border border-[#2a243a] shadow-2xl space-y-4">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2.5 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30">
             <Film className="w-5 h-5 animate-pulse" />
           </div>
-          <h2 className="text-xl font-bold font-display text-white">Latest Official Anime Trailers</h2>
+          <h2 className="text-xl font-extrabold font-display text-[#f2effc]">Latest Official Anime Trailers</h2>
         </div>
-        <div className="aspect-video w-full rounded-2xl bg-slate-900/60 animate-pulse flex items-center justify-center text-slate-500 text-xs">
+        <div className="aspect-video w-full rounded-xl bg-[#0c0915] animate-pulse flex items-center justify-center text-[#a09cb0] text-xs">
           Loading verified YouTube trailers...
         </div>
       </section>
@@ -68,28 +68,33 @@ export const TrailersSection: React.FC<TrailersSectionProps> = ({ onSelectAnime,
 
   if (trailers.length === 0) {
     return (
-      <section className="my-12 glass-panel rounded-3xl p-8 border border-slate-800/80 shadow-2xl text-center space-y-2 text-xs text-slate-400">
-        <p className="text-sm font-semibold text-white">No official trailers are currently available.</p>
+      <section className="my-12 bg-[#161224] rounded-xl p-8 border border-[#2a243a] shadow-2xl text-center space-y-2 text-xs text-[#a09cb0]">
+        <p className="text-sm font-bold text-[#f2effc]">No official trailers are currently available.</p>
       </section>
     );
   }
 
   return (
-    <section className="my-12 glass-panel rounded-3xl p-6 sm:p-8 border border-slate-800/80 shadow-2xl space-y-6">
+    <section className="my-12 bg-[#161224] rounded-xl p-6 sm:p-8 border border-[#2a243a] shadow-2xl space-y-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-violet-600/20 text-violet-400 border border-violet-500/30">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30">
             <Film className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-xl font-bold font-display text-white">Latest Official Anime Trailers</h2>
-            <p className="text-xs text-slate-400">Official promotional trailers directly associated with AniList media</p>
+            <h2 className="text-xl font-extrabold font-display text-[#f2effc]">
+              Latest Official Anime{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-sky-400">
+                Trailers
+              </span>
+            </h2>
+            <p className="text-xs text-[#a09cb0]">Official promotional trailers directly associated with AniList media</p>
           </div>
         </div>
 
         <button
           onClick={loadTrailers}
-          className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition"
+          className="p-2.5 rounded-xl bg-[#0c0915] border border-[#2a243a] text-[#a09cb0] hover:text-white hover:border-purple-500/50 transition cursor-pointer"
           title="Refresh Trailers"
         >
           <RefreshCw className="w-4 h-4" />
@@ -100,7 +105,7 @@ export const TrailersSection: React.FC<TrailersSectionProps> = ({ onSelectAnime,
         {/* Main Video Embed Player */}
         <div className="lg:col-span-2 flex flex-col gap-4">
           {activeTrailer ? (
-            <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-2xl">
+            <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-[#0c0915] border border-[#2a243a] shadow-2xl">
               <iframe
                 ref={videoRef}
                 key={activeTrailer.id}
@@ -112,16 +117,16 @@ export const TrailersSection: React.FC<TrailersSectionProps> = ({ onSelectAnime,
               />
             </div>
           ) : (
-            <div className="aspect-video w-full rounded-2xl bg-slate-900 flex items-center justify-center text-slate-500 text-xs">
+            <div className="aspect-video w-full rounded-xl bg-[#0c0915] flex items-center justify-center text-[#a09cb0] text-xs">
               Select a trailer card to play preview
             </div>
           )}
 
           {activeTrailer && (
-            <div className="glass-panel p-5 rounded-2xl border border-slate-800/80 space-y-3">
+            <div className="bg-[#0c0915] p-5 rounded-xl border border-[#2a243a] space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2 text-xs">
-                  <span className="px-2.5 py-0.5 rounded-full bg-violet-600/20 text-violet-300 font-bold border border-violet-500/30">
+                  <span className="px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30">
                     {activeTrailer.category}
                   </span>
                   {activeTrailer.animeMedia.averageScore && (
@@ -136,7 +141,7 @@ export const TrailersSection: React.FC<TrailersSectionProps> = ({ onSelectAnime,
                   href={activeTrailer.originalUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-1 text-xs font-semibold text-violet-400 hover:underline"
+                  className="flex items-center gap-1 text-xs font-semibold text-purple-400 hover:text-purple-300 hover:underline"
                 >
                   <span>Watch on YouTube</span>
                   <ExternalLink className="w-3.5 h-3.5" />
@@ -144,23 +149,23 @@ export const TrailersSection: React.FC<TrailersSectionProps> = ({ onSelectAnime,
               </div>
 
               <div>
-                <h3 className="text-lg font-bold text-white font-display">{activeTrailer.trailerTitle}</h3>
-                <p className="text-xs text-slate-400 line-clamp-2 mt-1">{activeTrailer.animeMedia.description}</p>
+                <h3 className="text-lg font-bold text-[#f2effc] font-display">{activeTrailer.trailerTitle}</h3>
+                <p className="text-xs text-[#a09cb0] line-clamp-2 mt-1">{activeTrailer.animeMedia.description}</p>
               </div>
 
               {onSelectAnime && (
-                <div className="pt-2 flex gap-3">
+                <div className="pt-2 flex flex-wrap gap-3">
                   <button
                     onClick={() => onSelectAnime(activeTrailer.animeMedia)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-semibold transition"
+                    className="btn-secondary-pill flex items-center gap-2 text-xs cursor-pointer"
                   >
-                    <Tv className="w-3.5 h-3.5 text-violet-400" />
+                    <Tv className="w-3.5 h-3.5 text-purple-400" />
                     <span>View Anime Details</span>
                   </button>
                   {onWatchAnime && (
                     <button
                       onClick={() => onWatchAnime(activeTrailer.animeMedia)}
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold shadow-lg shadow-violet-600/20 transition"
+                      className="btn-primary-pill flex items-center gap-2 text-xs cursor-pointer"
                     >
                       <Play className="w-3.5 h-3.5 fill-white ml-0.5" />
                       <span>Watch Episode 1</span>
@@ -174,7 +179,7 @@ export const TrailersSection: React.FC<TrailersSectionProps> = ({ onSelectAnime,
 
         {/* Playlist Selector */}
         <div className="space-y-3 max-h-[520px] overflow-y-auto pr-2 no-scrollbar">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Verified Trailers</p>
+          <p className="text-xs font-bold text-[#a09cb0] uppercase tracking-wider mb-2">Verified Trailers</p>
 
           {trailers.map((item) => {
             const isSelected = activeTrailer?.id === item.id;
@@ -182,18 +187,18 @@ export const TrailersSection: React.FC<TrailersSectionProps> = ({ onSelectAnime,
               <div
                 key={item.id}
                 onClick={() => setActiveTrailer(item)}
-                className={`flex items-center gap-3 p-2.5 rounded-2xl border cursor-pointer transition ${
+                className={`flex items-center gap-3 p-2.5 rounded-xl border cursor-pointer transition ${
                   isSelected
-                    ? 'bg-violet-600/20 border-violet-500/50 text-white shadow-lg'
-                    : 'bg-slate-900/60 border-slate-800/80 hover:bg-slate-800/60 text-slate-300'
+                    ? 'bg-purple-500/20 border-purple-500/60 text-white shadow-lg'
+                    : 'bg-[#0c0915] border-[#2a243a] hover:border-purple-500/40 text-[#a09cb0]'
                 }`}
               >
-                <div className="relative w-28 h-16 rounded-xl overflow-hidden shrink-0 bg-slate-950 border border-slate-800">
+                <div className="relative w-28 h-16 rounded-lg overflow-hidden shrink-0 bg-[#0c0915] border border-[#2a243a]">
                   <img src={item.thumbnailUrl} alt={item.trailerTitle} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                     <div
                       className={`p-2 rounded-full ${
-                        isSelected ? 'bg-violet-600 text-white' : 'bg-slate-950/80 text-white'
+                        isSelected ? 'bg-gradient-to-r from-purple-600 to-sky-500 text-white' : 'bg-[#0c0915]/80 text-white'
                       }`}
                     >
                       <Play className="w-3.5 h-3.5 fill-white ml-0.5" />
@@ -202,8 +207,8 @@ export const TrailersSection: React.FC<TrailersSectionProps> = ({ onSelectAnime,
                 </div>
 
                 <div className="flex-1 min-w-0 space-y-0.5">
-                  <span className="text-[10px] font-bold text-violet-400 block uppercase">{item.category}</span>
-                  <h4 className="text-xs font-bold line-clamp-2 leading-tight">{item.animeTitle}</h4>
+                  <span className="text-[10px] font-bold text-purple-400 block uppercase">{item.category}</span>
+                  <h4 className="text-xs font-bold line-clamp-2 leading-tight text-[#f2effc] font-display">{item.animeTitle}</h4>
                 </div>
               </div>
             );

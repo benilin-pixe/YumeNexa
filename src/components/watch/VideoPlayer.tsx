@@ -47,6 +47,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   useEffect(() => {
     let isMounted = true;
+    const downloadController = new AbortController();
+
     setIsLoading(true);
     setHasError(false);
     setShowCountdown(false);
@@ -71,17 +73,26 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     async function loadDownloadInfo() {
       try {
-        const info = await checkEpisodeDownloadAuthorization(animeId, animeTitle, episodeNumber);
-        if (isMounted) {
-          setDownloadInfo(info);
-          if (info.isAvailable && info.qualities && info.qualities.length > 0) {
-            const matchedQuality = info.qualities.find((q) => q.language === currentLang) || info.qualities[0];
-            setSelectedQualityUrl(matchedQuality.url);
-          } else if (info.downloadUrl) {
-            setSelectedQualityUrl(info.downloadUrl);
-          }
+        const info = await checkEpisodeDownloadAuthorization(
+          animeId,
+          animeTitle,
+          episodeNumber,
+          downloadController.signal
+        );
+        if (!isMounted) return;
+        setDownloadInfo(info);
+        if (info.isAvailable && info.qualities && info.qualities.length > 0) {
+          const matchedQuality = info.qualities.find((q) => q.language === currentLang) || info.qualities[0];
+          setSelectedQualityUrl(matchedQuality.url);
+        } else if (info.downloadUrl) {
+          setSelectedQualityUrl(info.downloadUrl);
+        } else {
+          setSelectedQualityUrl('');
         }
-      } catch (err) {
+      } catch (err: any) {
+        if (err?.name === 'AbortError') {
+          return;
+        }
         if (isMounted) {
           setDownloadInfo({
             animeId,
@@ -93,6 +104,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             reason: 'STREAMING_ONLY_PROVIDER',
             message: 'Downloads are not available for this episode.',
           });
+          setSelectedQualityUrl('');
         }
       }
     }
@@ -105,6 +117,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     return () => {
       isMounted = false;
+      downloadController.abort();
       if (countdownTimer.current) clearInterval(countdownTimer.current);
     };
   }, [animeId, episodeNumber, currentLang]);

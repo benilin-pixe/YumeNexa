@@ -33,28 +33,38 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({ items, onSelect, onW
   const nextSlide = () => setCurrentIndex((prev) => (prev + 1) % items.length);
 
   return (
-    <div className="relative w-full h-[460px] sm:h-[540px] lg:h-[580px] rounded-3xl overflow-hidden shadow-2xl border border-slate-200/80 dark:border-slate-800/80 bg-slate-950 group">
-      {/* Background Image with Layered Gradient */}
+    <div className="relative w-full min-h-[70vh] rounded-3xl overflow-hidden shadow-2xl border border-[#2a243a] bg-[#0c0915] group">
+      {/* Background Image with Faded Opacity & Layered Gradient Overlays */}
       <div className="absolute inset-0">
         <img
           src={banner}
           alt={title}
-          className="w-full h-full object-cover object-center scale-105 filter contrast-[1.05] transition-all duration-700"
+          className="w-full h-full object-cover object-center scale-105 opacity-50 filter contrast-[1.1] transition-transform duration-1000 group-hover:scale-110"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/40" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0c0915] via-[#0c0915]/80 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0c0915] via-transparent to-transparent" />
+      </div>
+
+      {/* Floating Particle Dots */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-10">
+        <div className="absolute top-1/4 left-1/5 w-1.5 h-1.5 bg-purple-400 rounded-full blur-[1px] animate-particle-1" />
+        <div className="absolute top-1/2 left-2/3 w-2 h-2 bg-sky-400 rounded-full blur-[1px] animate-particle-2" />
+        <div className="absolute top-3/4 left-1/3 w-1 h-1 bg-pink-400 rounded-full blur-[1px] animate-particle-3" />
+        <div className="absolute top-1/3 left-3/4 w-2 h-2 bg-purple-500 rounded-full blur-[1px] animate-particle-4" />
       </div>
 
       {/* Content Container */}
-      <div className="relative h-full max-w-7xl mx-auto px-6 sm:px-10 flex flex-col justify-end pb-10 sm:pb-14 z-10">
-        <div className="max-w-2xl space-y-3.5">
-          {/* Unboxed Metadata Line */}
-          <div className="flex items-center gap-2 text-xs text-slate-300 font-medium">
-            <span className="text-violet-400 font-bold uppercase tracking-wider">Spotlight #{currentIndex + 1}</span>
+      <div className="relative h-full min-h-[70vh] max-w-7xl mx-auto px-6 sm:px-10 flex flex-col justify-end pb-12 sm:pb-16 z-20">
+        <div className="max-w-2xl space-y-4">
+          {/* Small Uppercase Tagline in Electric Blue */}
+          <div className="flex items-center gap-2.5">
+            <span className="text-sky-400 uppercase tracking-[0.25em] text-xs font-bold font-display">
+              Spotlight #{currentIndex + 1}
+            </span>
             {score && (
               <>
-                <span aria-hidden="true">·</span>
-                <span className="flex items-center gap-1 text-amber-400 font-bold">
+                <span className="text-[#2a243a]" aria-hidden="true">•</span>
+                <span className="flex items-center gap-1 text-amber-400 font-bold text-xs">
                   <Star className="w-3.5 h-3.5 fill-amber-400" />
                   {score}
                 </span>
@@ -62,51 +72,52 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({ items, onSelect, onW
             )}
             {current.format && (
               <>
-                <span aria-hidden="true">·</span>
-                <span>{current.format}</span>
-              </>
-            )}
-            {current.seasonYear && (
-              <>
-                <span aria-hidden="true">·</span>
-                <span>{current.season} {current.seasonYear}</span>
+                <span className="text-[#2a243a]" aria-hidden="true">•</span>
+                <span className="text-[#a09cb0] text-xs font-medium">{current.format}</span>
               </>
             )}
           </div>
 
-          {/* Title */}
-          <h1 className="text-3xl sm:text-5xl font-black font-display tracking-tight text-white line-clamp-2 drop-shadow-md leading-tight">
+          {/* Huge Extra-Bold Title */}
+          <h1 className="text-4xl sm:text-6xl font-black font-display tracking-tight text-[#f8f7fa] line-clamp-2 leading-[1.1] drop-shadow-xl">
             {title}
           </h1>
 
-          {/* Genres Line */}
-          {current.genres && (
-            <div className="text-xs text-slate-400 font-medium">
-              {current.genres.slice(0, 4).join(' · ')}
+          {/* Genre Pills */}
+          {current.genres && current.genres.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              {current.genres.slice(0, 4).map((g, idx) => (
+                <span
+                  key={idx}
+                  className="rounded-full border border-[#2a243a] bg-[#161224]/80 backdrop-blur-md text-[#f8f7fa] text-xs font-semibold px-3 py-1 shadow-sm"
+                >
+                  {g}
+                </span>
+              ))}
             </div>
           )}
 
-          {/* Synopsis Preview */}
-          <p className="text-xs sm:text-sm text-slate-300 line-clamp-2 sm:line-clamp-3 leading-relaxed max-w-xl">
+          {/* Synopsis Description (3-line clamped) */}
+          <p className="text-xs sm:text-base text-[#a09cb0] line-clamp-3 leading-relaxed max-w-xl font-body">
             {current.description?.replace(/<[^>]*>?/gm, '')}
           </p>
 
-          {/* Action CTAs */}
-          <div className="flex flex-wrap items-center gap-3 pt-2">
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center gap-3.5 pt-3">
             <button
               onClick={() => onWatch(current)}
-              className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs sm:text-sm shadow-xl shadow-violet-600/30 hover:scale-105 active:scale-95 transition cursor-pointer"
+              className="btn-primary-pill px-7 py-3 text-xs sm:text-sm font-bold flex items-center gap-2 cursor-pointer shadow-lg shadow-purple-600/30"
             >
               <Play className="w-4 h-4 fill-white" />
-              Watch Episode 1
+              <span>Watch Now</span>
             </button>
 
             <button
               onClick={() => onSelect(current)}
-              className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-slate-200 font-semibold text-xs sm:text-sm backdrop-blur-md transition cursor-pointer"
+              className="btn-secondary-pill px-6 py-3 text-xs sm:text-sm font-semibold flex items-center gap-2 cursor-pointer"
             >
-              <Info className="w-4 h-4 text-violet-400" />
-              View Details
+              <Info className="w-4 h-4 text-sky-400" />
+              <span>View Details</span>
             </button>
 
             <button
@@ -117,10 +128,10 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({ items, onSelect, onW
                   updateAnimeStatus(current.id, title, current.coverImage?.large || '', 'PLANNING', 0, current.episodes || 0);
                 }
               }}
-              className={`p-3 rounded-2xl border text-xs sm:text-sm backdrop-blur-md transition cursor-pointer ${
+              className={`p-3 rounded-full border text-xs sm:text-sm transition cursor-pointer ${
                 watchlistEntry
                   ? 'bg-emerald-600 border-emerald-500 text-white'
-                  : 'bg-slate-900/80 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800'
+                  : 'bg-[#161224] border-[#2a243a] text-[#a09cb0] hover:text-white hover:border-[#a855f7]/60'
               }`}
               title={watchlistEntry ? 'In Watchlist' : 'Add to Watchlist'}
             >
@@ -133,26 +144,26 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({ items, onSelect, onW
       {/* Navigation Arrows */}
       <button
         onClick={prevSlide}
-        className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-slate-900/60 border border-slate-800 text-slate-300 opacity-0 group-hover:opacity-100 hover:bg-violet-600 hover:text-white transition backdrop-blur-md z-20 cursor-pointer"
+        className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-[#161224]/80 border border-[#2a243a] text-[#a09cb0] opacity-0 group-hover:opacity-100 hover:text-white hover:border-[#a855f7]/60 transition backdrop-blur-md z-30 cursor-pointer"
       >
         <ChevronLeft className="w-5 h-5" />
       </button>
 
       <button
         onClick={nextSlide}
-        className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-slate-900/60 border border-slate-800 text-slate-300 opacity-0 group-hover:opacity-100 hover:bg-violet-600 hover:text-white transition backdrop-blur-md z-20 cursor-pointer"
+        className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-[#161224]/80 border border-[#2a243a] text-[#a09cb0] opacity-0 group-hover:opacity-100 hover:text-white hover:border-[#a855f7]/60 transition backdrop-blur-md z-30 cursor-pointer"
       >
         <ChevronRight className="w-5 h-5" />
       </button>
 
       {/* Slide Indicators */}
-      <div className="absolute bottom-4 right-8 flex items-center gap-1.5 z-20">
+      <div className="absolute bottom-6 right-8 flex items-center gap-2 z-30">
         {items.map((_, idx) => (
           <button
             key={idx}
             onClick={() => setCurrentIndex(idx)}
             className={`h-1.5 rounded-full transition-all cursor-pointer ${
-              idx === currentIndex ? 'w-8 bg-violet-500' : 'w-2 bg-slate-700 hover:bg-slate-500'
+              idx === currentIndex ? 'w-8 bg-gradient-to-r from-purple-500 to-sky-400' : 'w-2 bg-[#2a243a] hover:bg-[#a09cb0]'
             }`}
           />
         ))}

@@ -21,37 +21,41 @@ export const AUTHORIZED_DOWNLOAD_DOMAINS = [
   'staging.yumenexa.org',
 ];
 
-/**
- * Check if direct authorised download is available for an episode
- */
 export async function checkEpisodeDownloadAuthorization(
   animeId: number,
   animeTitle: string,
-  episodeNumber: number
+  episodeNumber: number,
+  signal?: AbortSignal
 ): Promise<DownloadableEpisodeInfo> {
   try {
-    // Attempt backend API check first
-    const res = await fetch(`/api/download/check?animeId=${animeId}&episode=${episodeNumber}`);
+    const res = await fetch(`/api/download/check?animeId=${animeId}&episode=${episodeNumber}`, { signal });
     if (res.ok) {
       const data = await res.json();
-      if (data.downloadInfo) {
+      if (data && data.downloadInfo) {
         return data.downloadInfo;
       }
+    } else {
+      console.warn(`[DownloadService] Backend API check returned status ${res.status}`);
     }
-  } catch (err) {
-    console.warn('[DownloadService] Backend API check fallback to client adapter:', err);
+  } catch (err: any) {
+    if (err.name === 'AbortError') {
+      throw err;
+    }
+    console.warn('[DownloadService] Backend API check unavailable:', err?.message || err);
   }
 
-  // Fallback to provider adapter verification
-  const adapterResult = await downloadAdapter.checkAvailability(animeId, animeTitle, episodeNumber);
-  
-  const defaultQuality = adapterResult.qualities?.[0];
+  // Security Fail-Closed:
+  // If backend check fails or is unreachable, DO NOT fall back to client adapter url generation.
+  // Return explicit unavailable status.
   return {
-    ...adapterResult,
-    downloadUrl: defaultQuality?.url,
-    fileFormat: defaultQuality?.format,
-    fileSize: defaultQuality?.fileSize,
-    episodeTitle: defaultQuality ? `Episode ${episodeNumber} (${defaultQuality.quality})` : undefined,
+    animeId,
+    animeTitle,
+    episodeNumber,
+    isAvailable: false,
+    providerName: 'AniEmbed Streaming Provider',
+    isStreamingOnly: true,
+    reason: 'STREAMING_ONLY_PROVIDER',
+    message: 'Downloads are not available for this episode.',
   };
 }
 
@@ -81,8 +85,16 @@ export async function validateAndTriggerDownload(downloadUrl: string): Promise<{
       body: JSON.stringify({ downloadUrl }),
     });
 
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      return {
+        success: false,
+        message: errorData.error || `Download validation failed with status ${res.status}.`,
+      };
+    }
+
     const data = await res.json();
-    if (!res.ok || !data.allowed) {
+    if (!data.allowed) {
       return {
         success: false,
         message: data.error || 'Download domain is not authorised by rights holder.',

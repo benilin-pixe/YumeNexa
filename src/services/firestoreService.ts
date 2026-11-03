@@ -30,8 +30,14 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 
 export async function createUserProfile(profile: UserProfile): Promise<void> {
   const path = `users/${profile.uid}`;
+  const rolePath = `user_roles/${profile.uid}`;
   try {
     await setDoc(doc(db, 'users', profile.uid), profile);
+    await setDoc(doc(db, 'user_roles', profile.uid), {
+      role: profile.role || 'user',
+      email: profile.email || '',
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, path);
   }

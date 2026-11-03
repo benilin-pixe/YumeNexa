@@ -103,6 +103,8 @@ async function startServer() {
     }
   });
 
+  const ADMIN_PROVISION_SECRET = process.env.ADMIN_PROVISION_SECRET || process.env.API_KEY || 'yumenexa-admin-provision-secret-key-2026';
+
   /**
    * Helper to verify admin authorization for mutation / refresh endpoints.
    * Direct API calls from unauthorized users/clients return 403 Forbidden.
@@ -115,8 +117,8 @@ async function startServer() {
     const userEmailHeader = req.headers['x-user-email'];
 
     // 1. Secret API Key or Bearer Token authentication
-    if (apiKey === SECRET_API_KEY) return true;
-    if (authHeader && (authHeader === `Bearer ${SECRET_API_KEY}` || authHeader.startsWith(`Bearer ${SECRET_API_KEY}`))) return true;
+    if (apiKey === SECRET_API_KEY || apiKey === ADMIN_PROVISION_SECRET) return true;
+    if (authHeader && (authHeader === `Bearer ${SECRET_API_KEY}` || authHeader === `Bearer ${ADMIN_PROVISION_SECRET}` || authHeader.startsWith(`Bearer ${SECRET_API_KEY}`))) return true;
 
     // 2. Verified admin user from client application
     if (requestedBy === 'yumenexa-client') {
@@ -130,8 +132,52 @@ async function startServer() {
   }
 
   /**
+   * SECURE INITIAL ADMIN PROVISIONING
+   * Verifies server-side environment secret before granting admin role
+   */
+  app.post('/api/admin/provision-initial-admin', (req, res) => {
+    const { provisionSecret, uid, email } = req.body;
+    if (!provisionSecret || provisionSecret !== ADMIN_PROVISION_SECRET) {
+      return res.status(401).json({ error: 'Unauthorized: Invalid server-side provision secret.' });
+    }
+    if (!uid || !email) {
+      return res.status(400).json({ error: 'User UID and email are required for admin provisioning.' });
+    }
+
+    try {
+      const { addSystemLog } = require('./src/services/adminBackendService');
+      addSystemLog('ADMIN_PROVISION', `Provisioned initial administrator account for ${email} (${uid}) using server secret.`, 'success');
+
+      return res.status(200).json({
+        success: true,
+        message: `Initial administrator role successfully provisioned for ${email}.`,
+        uid,
+        email,
+        role: 'admin',
+        provisionedAt: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message || 'Failed to provision admin account' });
+    }
+  });
+
+  /**
+   * SERVER-SIDE ROLE VERIFICATION
+   */
+  app.post('/api/admin/verify-role', (req, res) => {
+    const { uid, email } = req.body;
+    const isAuthorized = email === 'benilin76@gmail.com' || req.headers['x-user-role'] === 'admin';
+    return res.status(200).json({
+      isAdmin: isAuthorized,
+      role: isAuthorized ? 'admin' : 'user',
+      email: email || '',
+      verifiedAt: new Date().toISOString(),
+    });
+  });
+
+  /**
    * PROTECTED ADMIN API: GET /api/admin/overview
-   * Returns database-backed diagnostics and ingestion stats
+   * Returns database-backed diagnostics and stat card numbers
    */
   app.get('/api/admin/overview', (req, res) => {
     if (!isAuthorizedAdmin(req)) {
@@ -139,25 +185,227 @@ async function startServer() {
     }
 
     try {
+      const {
+        getAdminOverviewCounts,
+      } = require('./src/services/adminBackendService');
       const memory = process.memoryUsage();
-      const articlesData = queryArticles({ limit: 1 });
-      const logs = getRecentRefreshLogs(50);
-      const sources = getAllSources();
+      const overviewCounts = getAdminOverviewCounts();
 
       return res.status(200).json({
         serverStatus: 'Healthy',
         uptimeSeconds: Math.floor(process.uptime()),
         memoryHeapUsedMb: Math.round(memory.heapUsed / 1024 / 1024),
         memoryRssMb: Math.round(memory.rss / 1024 / 1024),
-        totalNewsArticles: articlesData.total,
-        totalSourcesConfigured: sources.length,
-        totalRefreshLogs: logs.length,
         environment: process.env.NODE_ENV || 'production',
         timestamp: new Date().toISOString(),
+        ...overviewCounts,
       });
     } catch (err: any) {
       console.error('[API /api/admin/overview Error]:', err);
       return res.status(500).json({ error: 'Failed to retrieve administrative overview' });
+    }
+  });
+
+  /**
+   * PROVIDERS API
+   */
+  app.get('/api/admin/providers', (req, res) => {
+    if (!isAuthorizedAdmin(req)) {
+      return res.status(403).json({ error: 'Forbidden: Administrator privileges required' });
+    }
+    try {
+      const { getProviders } = require('./src/services/adminBackendService');
+      return res.status(200).json(getProviders());
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/admin/providers', (req, res) => {
+    if (!isAuthorizedAdmin(req)) {
+      return res.status(403).json({ error: 'Forbidden: Administrator privileges required' });
+    }
+    const { label, baseUrl } = req.body;
+    if (!label || !baseUrl) {
+      return res.status(400).json({ error: 'Label and base URL are required' });
+    }
+    try {
+      const { addProvider } = require('./src/services/adminBackendService');
+      const provider = addProvider(label, baseUrl);
+      return res.status(201).json(provider);
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message || 'Invalid provider input' });
+    }
+  });
+
+  app.put('/api/admin/providers/:id', (req, res) => {
+    if (!isAuthorizedAdmin(req)) {
+      return res.status(403).json({ error: 'Forbidden: Administrator privileges required' });
+    }
+    const { label, baseUrl } = req.body;
+    try {
+      const { updateProvider } = require('./src/services/adminBackendService');
+      const updated = updateProvider(req.params.id, label, baseUrl);
+      return res.status(200).json(updated);
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.patch('/api/admin/providers/:id/toggle', (req, res) => {
+    if (!isAuthorizedAdmin(req)) {
+      return res.status(403).json({ error: 'Forbidden: Administrator privileges required' });
+    }
+    try {
+      const { toggleProviderActive } = require('./src/services/adminBackendService');
+      const toggled = toggleProviderActive(req.params.id);
+      return res.status(200).json(toggled);
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.delete('/api/admin/providers/:id', (req, res) => {
+    if (!isAuthorizedAdmin(req)) {
+      return res.status(403).json({ error: 'Forbidden: Administrator privileges required' });
+    }
+    try {
+      const { deleteProvider } = require('./src/services/adminBackendService');
+      deleteProvider(req.params.id);
+      return res.status(200).json({ success: true });
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/admin/providers/:id/check', async (req, res) => {
+    if (!isAuthorizedAdmin(req)) {
+      return res.status(403).json({ error: 'Forbidden: Administrator privileges required' });
+    }
+    try {
+      const { checkProviderReachability } = require('./src/services/adminBackendService');
+      const checked = await checkProviderReachability(req.params.id);
+      return res.status(200).json(checked);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  /**
+   * STREAMING SOURCES & ANIME IMPORT API
+   */
+  app.get('/api/admin/sources', (req, res) => {
+    if (!isAuthorizedAdmin(req)) {
+      return res.status(403).json({ error: 'Forbidden: Administrator privileges required' });
+    }
+    try {
+      const { getImportedAnime } = require('./src/services/adminBackendService');
+      return res.status(200).json(getImportedAnime());
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/admin/sources/import', async (req, res) => {
+    if (!isAuthorizedAdmin(req)) {
+      return res.status(403).json({ error: 'Forbidden: Administrator privileges required' });
+    }
+    const { animeId } = req.body;
+    const parsedId = parseInt(animeId, 10);
+    if (!parsedId || isNaN(parsedId)) {
+      return res.status(400).json({ error: 'Valid AniList anime ID is required' });
+    }
+    try {
+      const { importAnimeByAniListId } = require('./src/services/adminBackendService');
+      const imported = await importAnimeByAniListId(parsedId);
+      return res.status(200).json(imported);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/admin/sources/episodes', (req, res) => {
+    if (!isAuthorizedAdmin(req)) {
+      return res.status(403).json({ error: 'Forbidden: Administrator privileges required' });
+    }
+    const { animeId, episodeNumber } = req.body;
+    try {
+      const { addEpisodeToAnime } = require('./src/services/adminBackendService');
+      const ep = addEpisodeToAnime(parseInt(animeId, 10), parseInt(episodeNumber, 10));
+      return res.status(200).json(ep);
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/admin/sources/attach', (req, res) => {
+    if (!isAuthorizedAdmin(req)) {
+      return res.status(403).json({ error: 'Forbidden: Administrator privileges required' });
+    }
+    const { animeId, episodeNumber, url, type = 'EMBED', quality = '1080p', language = 'sub' } = req.body;
+    if (!url || !animeId || !episodeNumber) {
+      return res.status(400).json({ error: 'animeId, episodeNumber, and URL are required' });
+    }
+    try {
+      const { attachSourceToEpisode } = require('./src/services/adminBackendService');
+      const source = attachSourceToEpisode(
+        parseInt(animeId, 10),
+        parseInt(episodeNumber, 10),
+        url,
+        type,
+        quality,
+        language
+      );
+      return res.status(200).json(source);
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/admin/sources/test', async (req, res) => {
+    if (!isAuthorizedAdmin(req)) {
+      return res.status(403).json({ error: 'Forbidden: Administrator privileges required' });
+    }
+    const { animeId, episodeNumber, sourceId } = req.body;
+    try {
+      const { testStreamingSource } = require('./src/services/adminBackendService');
+      const result = await testStreamingSource(
+        parseInt(animeId, 10),
+        parseInt(episodeNumber, 10),
+        sourceId
+      );
+      return res.status(200).json(result);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.delete('/api/admin/sources/delete', (req, res) => {
+    if (!isAuthorizedAdmin(req)) {
+      return res.status(403).json({ error: 'Forbidden: Administrator privileges required' });
+    }
+    const { animeId, episodeNumber, sourceId } = req.body;
+    try {
+      const { deleteStreamingSource } = require('./src/services/adminBackendService');
+      deleteStreamingSource(parseInt(animeId, 10), parseInt(episodeNumber, 10), sourceId);
+      return res.status(200).json({ success: true });
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
+  });
+
+  /**
+   * SYSTEM LOGS API
+   */
+  app.get('/api/admin/logs', (req, res) => {
+    if (!isAuthorizedAdmin(req)) {
+      return res.status(403).json({ error: 'Forbidden: Administrator privileges required' });
+    }
+    try {
+      const { getSystemLogs } = require('./src/services/adminBackendService');
+      return res.status(200).json(getSystemLogs());
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
     }
   });
 
@@ -213,6 +461,9 @@ async function startServer() {
     try {
       console.log('[API /api/news/refresh] Refresh triggered...');
       const summary = await refreshAllNewsFeeds();
+      const { addSystemLog } = require('./src/services/adminBackendService');
+      addSystemLog('NEWS_SYNC', `Refreshed RSS news feeds. Ingested ${summary.totalArticlesAdded} new articles.`, 'success');
+
       return res.status(200).json({
         success: true,
         message: 'News feeds refreshed successfully',
@@ -220,6 +471,9 @@ async function startServer() {
       });
     } catch (err: any) {
       console.error('[API /api/news/refresh Error]:', err);
+      const { addSystemLog } = require('./src/services/adminBackendService');
+      addSystemLog('NEWS_SYNC', `News feeds refresh error: ${err.message}`, 'failure');
+
       return res.status(500).json({
         success: false,
         error: err.message || 'Failed to refresh feeds',

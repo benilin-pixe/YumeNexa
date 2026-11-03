@@ -26,15 +26,15 @@ export const WatchPage: React.FC<WatchPageProps> = ({
 
   if (!anime) {
     return (
-      <div className="glass-panel rounded-3xl p-12 text-center my-12 space-y-4 max-w-xl mx-auto border border-slate-200 dark:border-slate-800">
-        <div className="p-4 rounded-full bg-violet-600/20 text-violet-500 dark:text-violet-400 w-16 h-16 flex items-center justify-center mx-auto">
+      <div className="bg-[#161224] rounded-xl p-12 text-center my-12 space-y-4 max-w-xl mx-auto border border-[#2a243a]">
+        <div className="p-4 rounded-full bg-purple-500/20 text-purple-400 w-16 h-16 flex items-center justify-center mx-auto border border-purple-500/30">
           <Tv className="w-8 h-8" />
         </div>
-        <h2 className="text-xl font-bold font-display text-slate-900 dark:text-white">No Anime Selected for Playback</h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400">Select any anime title from Home or Explore to enter the YumeNexa Player.</p>
+        <h2 className="text-xl font-extrabold font-display text-[#f2effc]">No Anime Selected for Playback</h2>
+        <p className="text-xs text-[#a09cb0]">Select any anime title from Home or Explore to enter the YumeNexa Player.</p>
         <button
           onClick={onBackToExplore}
-          className="px-6 py-2.5 rounded-2xl bg-violet-600 hover:bg-violet-500 text-white font-semibold text-xs shadow-lg transition cursor-pointer"
+          className="btn-primary-pill px-6 py-2.5 text-xs font-bold cursor-pointer"
         >
           Explore Anime Directory
         </button>
@@ -48,10 +48,10 @@ export const WatchPage: React.FC<WatchPageProps> = ({
   return (
     <div className="space-y-8 pb-16">
       {/* Top Header / Back CTA */}
-      <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800/80 pb-4">
+      <div className="flex items-center justify-between border-b border-[#2a243a] pb-4">
         <button
           onClick={onBackToExplore}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-xs font-semibold transition cursor-pointer"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#161224] border border-[#2a243a] text-[#f2effc] hover:border-purple-500/50 hover:text-purple-400 text-xs font-semibold transition cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Explore</span>
@@ -87,17 +87,17 @@ export const WatchPage: React.FC<WatchPageProps> = ({
       />
 
       {/* Anime Overview & Details */}
-      <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800/80 flex flex-col md:flex-row gap-6 items-start">
+      <div className="bg-[#161224] rounded-xl p-6 sm:p-8 border border-[#2a243a] flex flex-col md:flex-row gap-6 items-start">
         <img
           src={anime.coverImage?.extraLarge || anime.coverImage?.large}
           alt={title}
-          className="w-32 sm:w-40 aspect-[3/4] rounded-2xl object-cover shrink-0 border border-slate-200 dark:border-slate-800 shadow-xl"
+          className="w-32 sm:w-40 aspect-[3/4] rounded-xl object-cover shrink-0 border border-[#2a243a] shadow-xl"
         />
 
         <div className="space-y-3 flex-1 min-w-0">
           {/* Unboxed Metadata Line */}
-          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
-            <span className="flex items-center gap-1 text-amber-500 font-bold">
+          <div className="flex items-center gap-2 text-xs text-[#a09cb0] font-medium">
+            <span className="flex items-center gap-1 text-amber-400 font-bold">
               <Star className="w-3.5 h-3.5 fill-amber-400" />
               {(anime.averageScore ? anime.averageScore / 10 : 0).toFixed(1)}
             </span>
@@ -111,16 +111,16 @@ export const WatchPage: React.FC<WatchPageProps> = ({
             )}
           </div>
 
-          <h2 className="text-2xl font-bold font-display text-slate-900 dark:text-white">{title}</h2>
+          <h2 className="text-2xl font-extrabold font-display text-[#f2effc]">{title}</h2>
 
           {anime.genres && (
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+            <p className="text-xs text-[#a09cb0] font-medium">
               {anime.genres.join(' · ')}
             </p>
           )}
 
           <p
-            className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed line-clamp-4"
+            className="text-xs sm:text-sm text-[#a09cb0] leading-relaxed line-clamp-4"
             dangerouslySetInnerHTML={{ __html: anime.description || '' }}
           />
         </div>
