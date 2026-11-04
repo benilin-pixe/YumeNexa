@@ -87,3 +87,12 @@ export async function getKitsuSearch(queryStr: string): Promise<AnimeMedia[]> {
   if (!data || !Array.isArray(data)) return [];
   return data.map(mapKitsuToAnimeMedia);
 }
+
+export async function getKitsuAnimeDetails(id: number): Promise<AnimeMedia | null> {
+  // If ID has the 9000000 offset applied from Kitsu namespace, strip it
+  const kitsuId = id >= 9000000 ? id - 9000000 : id;
+  const data = await fetchKitsu<any>(`/anime/${kitsuId}`);
+  if (!data) return null;
+  return mapKitsuToAnimeMedia(data);
+}
+

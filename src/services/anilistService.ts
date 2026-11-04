@@ -23,20 +23,33 @@ async function fetchAniListGraphQL<T>(query: string, variables: Record<string, a
       body: JSON.stringify({ query, variables }),
     });
 
-    if (!response.ok) {
-      throw new Error(`AniList GraphQL error: status ${response.status}`);
+    let json: any = null;
+    try {
+      json = await response.json();
+    } catch {
+      // response body could not be parsed as json
     }
 
-    const json = await response.json();
-    if (json.errors && json.errors.length > 0) {
-      console.error('AniList errors:', json.errors);
+    if (!response.ok) {
+      const errorMessage = json?.errors?.[0]?.message || `status ${response.status}`;
+      const err = new Error(`AniList GraphQL error: ${errorMessage}`);
+      (err as any).status = response.status;
+      (err as any).errors = json?.errors;
+      throw err;
+    }
+
+    if (json?.errors && json.errors.length > 0) {
+      console.warn('AniList GraphQL query notice:', json.errors);
       throw new Error(json.errors[0].message || 'GraphQL Query Error');
     }
 
     cache.set(cacheKey, { data: json.data, timestamp: Date.now() });
     return json.data as T;
-  } catch (err) {
-    console.error('Failed to fetch from AniList:', err);
+  } catch (err: any) {
+    // Only log if not a standard not-found query to keep console clean
+    if (err?.status !== 404 && !err?.message?.includes('Not Found')) {
+      console.warn('AniList query notice:', err?.message || err);
+    }
     throw err;
   }
 }
@@ -193,7 +206,15 @@ export async function getPopularMovies(page = 1, perPage = 12): Promise<{ media:
   return data.Page;
 }
 
+import { getKitsuAnimeDetails } from './kitsuService';
+
 export async function getAnimeDetails(id: number): Promise<AnimeMedia> {
+  // If the ID is a Kitsu namespaced ID (e.g. >= 9000000), route directly to Kitsu
+  if (id >= 9000000) {
+    const kitsuData = await getKitsuAnimeDetails(id);
+    if (kitsuData) return kitsuData;
+  }
+
   const query = `
     query ($id: Int) {
       Media(id: $id, type: ANIME) {
@@ -238,8 +259,27 @@ export async function getAnimeDetails(id: number): Promise<AnimeMedia> {
       }
     }
   `;
-  const data = await fetchAniListGraphQL<{ Media: AnimeMedia }>(query, { id });
-  return data.Media;
+
+  try {
+    const data = await fetchAniListGraphQL<{ Media: AnimeMedia }>(query, { id });
+    if (data?.Media) {
+      return data.Media;
+    }
+  } catch (err: any) {
+    // If not found (404) or failed, attempt secondary Kitsu lookup before rethrowing
+    try {
+      const fallbackKitsu = await getKitsuAnimeDetails(id);
+      if (fallbackKitsu) {
+        return fallbackKitsu;
+      }
+    } catch {
+      // Fallback lookup failed
+    }
+
+    throw err;
+  }
+
+  throw new Error(`Anime not found for ID: ${id}`);
 }
 
 export async function searchAnime(filters: AnimeSearchFilter): Promise<{ media: AnimeMedia[]; pageInfo: PageInfo }> {

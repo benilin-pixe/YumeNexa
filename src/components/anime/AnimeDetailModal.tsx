@@ -21,11 +21,13 @@ export const AnimeDetailModal: React.FC<AnimeDetailModalProps> = ({
 }) => {
   const [details, setDetails] = useState<AnimeMedia | null>(initialAnime || null);
   const [loading, setLoading] = useState<boolean>(!initialAnime);
+  const [hasError, setHasError] = useState<boolean>(false);
 
   useEffect(() => {
     if (!animeId) return;
     let isMounted = true;
-    setLoading(true);
+    setLoading(!initialAnime);
+    setHasError(false);
 
     getAnimeDetails(animeId)
       .then((data) => {
@@ -35,24 +37,59 @@ export const AnimeDetailModal: React.FC<AnimeDetailModalProps> = ({
         }
       })
       .catch((err) => {
-        console.warn('Failed to load full anime details:', err);
-        if (isMounted) setLoading(false);
+        console.warn('Anime details fetch notice:', err?.message || err);
+        if (isMounted) {
+          setLoading(false);
+          if (!initialAnime) {
+            setHasError(true);
+          }
+        }
       });
 
     return () => {
       isMounted = false;
     };
-  }, [animeId]);
+  }, [animeId, initialAnime]);
 
   if (!animeId) return null;
+
+  if (hasError && !initialAnime) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-8 text-center space-y-4">
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <div className="w-12 h-12 rounded-full bg-violet-500/10 text-violet-500 flex items-center justify-center mx-auto text-xl">
+            📺
+          </div>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white font-display">
+            Anime Title Unavailable
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            This title could not be retrieved from AniList or external archives. Please try another title.
+          </p>
+          <button
+            onClick={onClose}
+            className="btn-primary-pill px-6 py-2 text-xs font-semibold cursor-pointer w-full"
+          >
+            Close Window
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const anime = details || initialAnime;
   if (!anime) return null;
 
-  const englishTitle = anime.title.english;
-  const romajiTitle = anime.title.romaji || anime.title.userPreferred;
-  const nativeTitle = anime.title.native;
-  const cover = anime.coverImage?.extraLarge || anime.coverImage?.large;
+  const englishTitle = anime.title?.english;
+  const romajiTitle = anime.title?.romaji || anime.title?.userPreferred || 'Untitled Anime';
+  const nativeTitle = anime.title?.native;
+  const cover = anime.coverImage?.extraLarge || anime.coverImage?.large || anime.coverImage?.medium || '';
   const banner = anime.bannerImage || cover;
   const score = anime.averageScore ? (anime.averageScore / 10).toFixed(1) : 'N/A';
 
