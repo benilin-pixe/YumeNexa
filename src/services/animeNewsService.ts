@@ -1,7 +1,6 @@
 import { NewsArticle } from '../types/news';
 import { validateNewsImageUrl } from './newsImageService';
 import { fetchAllBackupFeeds } from './newsFeedService';
-import { fetchAniListRealTrailers } from './anilistTrailerService';
 
 const BACKEND_NEWS_API_URL = '/api/news?limit=30';
 
@@ -156,26 +155,6 @@ export async function fetchAnimeNews(category?: string, search?: string): Promis
   }
 
   return deduplicated.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-}
-
-export async function getOfficialTrailersFeed(): Promise<NewsArticle[]> {
-  try {
-    const realTrailers = await fetchAniListRealTrailers(8);
-    return realTrailers.map((t) => ({
-      id: t.id,
-      title: t.trailerTitle,
-      url: t.originalUrl,
-      source: t.animeMedia.studios?.nodes?.[0]?.name || 'AniList Official',
-      publishedAt: new Date().toISOString(),
-      summary: t.animeMedia.description || `${t.animeTitle} official trailer response.`,
-      imageUrl: t.thumbnailUrl,
-      videoUrl: t.embedUrl,
-      relatedAnimeId: t.animeId,
-      category: 'Trailers',
-    }));
-  } catch {
-    return [];
-  }
 }
 
 export async function fetchNewsArticleBySlug(slug: string): Promise<NewsArticle | null> {

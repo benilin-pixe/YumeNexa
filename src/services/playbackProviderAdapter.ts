@@ -56,15 +56,17 @@ export class PlaybackProviderAdapter {
 
   /**
    * Generate embed URL using standard format:
-   * https://aniembed.se/e/{anilistId}/{episode}?lang=sub|dub&autoplay=1&t=SECONDS
+   * https://aniembed.se/e/{anilistId}/{episode}?lang=sub|dub&autoplay=0&t=SECONDS
    */
   public getEmbedUrl(params: PlaybackEmbedParams): string {
-    const { anilistId, episode, lang, autoplay = true, time = 0 } = params;
+    const { anilistId, episode, lang, autoplay = false, time = 0 } = params;
     const baseUrl = `https://aniembed.se/e/${anilistId}/${episode}`;
     const queryParams = new URLSearchParams();
     queryParams.set('lang', lang);
     if (autoplay) {
       queryParams.set('autoplay', '1');
+    } else {
+      queryParams.set('autoplay', '0');
     }
     if (time > 0) {
       queryParams.set('t', Math.floor(time).toString());

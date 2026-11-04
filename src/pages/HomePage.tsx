@@ -15,7 +15,6 @@ import { fetchAnimeNews } from '../services/animeNewsService';
 import { HeroCarousel } from '../components/home/HeroCarousel';
 import { UpcomingCountdownWidget } from '../components/home/UpcomingCountdownWidget';
 import { AnimeSection } from '../components/home/AnimeSection';
-import { TrailersSection } from '../components/home/TrailersSection';
 import { NewsCard } from '../components/news/NewsCard';
 import { NewsDetailModal } from '../components/news/NewsDetailModal';
 import { useWatchlist } from '../contexts/WatchlistContext';
@@ -187,9 +186,6 @@ export const HomePage: React.FC<HomePageProps> = ({
         onWatch={onWatchAnime}
         onViewAll={() => onNavigateTab('explore')}
       />
-
-      {/* Official Video Trailers */}
-      <TrailersSection onSelectAnime={onSelectAnime} onWatchAnime={onWatchAnime} />
 
       {/* Most Popular Anime */}
       <AnimeSection

@@ -73,7 +73,6 @@ export const WatchPage: React.FC<WatchPageProps> = ({
         animeTitle={title}
         coverImage={anime.coverImage?.extraLarge || anime.coverImage?.large || ''}
         episodeNumber={currentEpisode}
-        trailerYoutubeId={anime.trailer?.id}
         totalEpisodes={totalEps}
         onNextEpisode={() => setCurrentEpisode((ep) => Math.min(totalEps, ep + 1))}
         onPrevEpisode={() => setCurrentEpisode((ep) => Math.max(1, ep - 1))}

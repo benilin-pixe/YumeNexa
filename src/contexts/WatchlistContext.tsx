@@ -35,8 +35,6 @@ interface WatchlistContextType {
   refreshWatchlist: () => Promise<void>;
   playbackPref: 'SUB' | 'DUB';
   updatePlaybackPref: (pref: 'SUB' | 'DUB') => void;
-  autoplayNext: boolean;
-  updateAutoplay: (enabled: boolean) => void;
   toggleNotifications: (animeId: number, enabled: boolean) => Promise<void>;
 }
 
@@ -48,24 +46,16 @@ export const WatchlistProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [watchHistory, setWatchHistory] = useState<WatchHistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [playbackPref, setPlaybackPref] = useState<'SUB' | 'DUB'>('SUB');
-  const [autoplayNext, setAutoplayNext] = useState(true);
 
   // Load prefs from local storage/db
   useEffect(() => {
     const savedPref = localStorage.getItem('yumenexa_lang_pref');
     if (savedPref) setPlaybackPref(savedPref as 'SUB' | 'DUB');
-    const savedAutoplay = localStorage.getItem('yumenexa_autoplay');
-    if (savedAutoplay) setAutoplayNext(savedAutoplay === 'true');
   }, []);
 
   const updatePlaybackPref = (pref: 'SUB' | 'DUB') => {
     setPlaybackPref(pref);
     localStorage.setItem('yumenexa_lang_pref', pref);
-  };
-  
-  const updateAutoplay = (enabled: boolean) => {
-    setAutoplayNext(enabled);
-    localStorage.setItem('yumenexa_autoplay', enabled.toString());
   };
 
   const loadUserData = async () => {
@@ -232,8 +222,6 @@ export const WatchlistProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         refreshWatchlist: loadUserData,
         playbackPref,
         updatePlaybackPref,
-        autoplayNext,
-        updateAutoplay,
         toggleNotifications,
       }}
     >

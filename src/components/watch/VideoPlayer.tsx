@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, RefreshCw, AlertCircle, Tv, Download, CheckCircle2, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { PlaybackStreamSource, getEpisodeStreams } from '../../services/playbackService';
 import { SubDubLanguage } from '../../services/playbackProviderAdapter';
-import { DownloadableEpisodeInfo, checkEpisodeDownloadAuthorization, validateAndTriggerDownload } from '../../services/downloadService';
 import { useWatchlist } from '../../contexts/WatchlistContext';
 
 interface VideoPlayerProps {
@@ -10,7 +9,6 @@ interface VideoPlayerProps {
   animeTitle: string;
   coverImage: string;
   episodeNumber: number;
-  trailerYoutubeId?: string;
   totalEpisodes?: number;
   onNextEpisode?: () => void;
   onPrevEpisode?: () => void;
@@ -21,12 +19,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   animeTitle,
   coverImage,
   episodeNumber,
-  trailerYoutubeId,
   totalEpisodes = 12,
   onNextEpisode,
   onPrevEpisode,
 }) => {
-  const { recordProgress, updateAnimeStatus, playbackPref, updatePlaybackPref, autoplayNext, updateAutoplay } = useWatchlist();
+  const { recordProgress, updateAnimeStatus, playbackPref, updatePlaybackPref } = useWatchlist();
   
   const [sources, setSources] = useState<PlaybackStreamSource[]>([]);
   const [activeSource, setActiveSource] = useState<PlaybackStreamSource | null>(null);
@@ -34,25 +31,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Download state
-  const [downloadInfo, setDownloadInfo] = useState<DownloadableEpisodeInfo | null>(null);
-  const [downloading, setDownloading] = useState(false);
-  const [selectedQualityUrl, setSelectedQualityUrl] = useState<string>('');
-  const [downloadFeedback, setDownloadFeedback] = useState<string | null>(null);
-
-  // Autoplay countdown state
-  const [showCountdown, setShowCountdown] = useState(false);
-  const [countdown, setCountdown] = useState(10);
-  const countdownTimer = useRef<any>(null);
-
   useEffect(() => {
     let isMounted = true;
-    const downloadController = new AbortController();
-
     setIsLoading(true);
     setHasError(false);
-    setShowCountdown(false);
-    setDownloadFeedback(null);
 
     async function loadStreams() {
       try {
@@ -71,54 +53,13 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       }
     }
 
-    async function loadDownloadInfo() {
-      try {
-        const info = await checkEpisodeDownloadAuthorization(
-          animeId,
-          animeTitle,
-          episodeNumber,
-          downloadController.signal
-        );
-        if (!isMounted) return;
-        setDownloadInfo(info);
-        if (info.isAvailable && info.qualities && info.qualities.length > 0) {
-          const matchedQuality = info.qualities.find((q) => q.language === currentLang) || info.qualities[0];
-          setSelectedQualityUrl(matchedQuality.url);
-        } else if (info.downloadUrl) {
-          setSelectedQualityUrl(info.downloadUrl);
-        } else {
-          setSelectedQualityUrl('');
-        }
-      } catch (err: any) {
-        if (err?.name === 'AbortError') {
-          return;
-        }
-        if (isMounted) {
-          setDownloadInfo({
-            animeId,
-            animeTitle,
-            episodeNumber,
-            isAvailable: false,
-            providerName: 'AniEmbed Streaming Provider',
-            isStreamingOnly: true,
-            reason: 'STREAMING_ONLY_PROVIDER',
-            message: 'Downloads are not available for this episode.',
-          });
-          setSelectedQualityUrl('');
-        }
-      }
-    }
-
     loadStreams();
-    loadDownloadInfo();
 
     recordProgress(animeId, animeTitle, coverImage, episodeNumber, 0, 1440);
     updateAnimeStatus(animeId, animeTitle, coverImage, 'WATCHING', episodeNumber, totalEpisodes);
 
     return () => {
       isMounted = false;
-      downloadController.abort();
-      if (countdownTimer.current) clearInterval(countdownTimer.current);
     };
   }, [animeId, episodeNumber, currentLang]);
 
@@ -132,30 +73,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   };
 
-  const cancelAutoplay = () => {
-    if (countdownTimer.current) clearInterval(countdownTimer.current);
-    setShowCountdown(false);
-  };
-
-  const handleDownloadClick = async () => {
-    const urlToUse = selectedQualityUrl || downloadInfo?.downloadUrl;
-    if (!urlToUse) return;
-    setDownloading(true);
-    setDownloadFeedback(null);
-    try {
-      const res = await validateAndTriggerDownload(urlToUse);
-      setDownloadFeedback(res.message);
-    } catch (err: any) {
-      console.error('Download trigger error:', err);
-      setDownloadFeedback(err.message || 'Download failed.');
-    } finally {
-      setDownloading(false);
-    }
-  };
-
-  const hasSubSource = sources.some((s) => s.subType === 'sub');
-  const hasDubSource = sources.some((s) => s.subType === 'dub');
-
   return (
     <div className="w-full space-y-6">
       {/* Video Iframe Container */}
@@ -165,7 +82,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             key={`${activeSource.providerId}_ep${episodeNumber}_${currentLang}`}
             src={activeSource.embedUrl}
             title={`${animeTitle} - Episode ${episodeNumber} (${currentLang.toUpperCase()})`}
-            allow="autoplay; fullscreen; picture-in-picture"
+            allow="fullscreen; picture-in-picture"
             allowFullScreen
             onLoad={() => setIsLoading(false)}
             className="w-full h-full border-0"
@@ -180,36 +97,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           </div>
         )}
 
-        {/* Autoplay Countdown Overlay */}
-        {showCountdown && (
-          <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center gap-4 text-white z-20 animate-fade-in">
-            <div className="w-16 h-16 rounded-full border-4 border-violet-500/30 border-t-violet-500 flex items-center justify-center text-xl font-bold font-display">
-              {countdown}
-            </div>
-            <div className="text-center space-y-1">
-              <h4 className="text-lg font-bold">Up Next: Episode {episodeNumber + 1}</h4>
-              <p className="text-xs text-slate-400">Autoplaying in {countdown} seconds...</p>
-            </div>
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                onClick={cancelAutoplay}
-                className="px-5 py-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold transition cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  cancelAutoplay();
-                  if (onNextEpisode) onNextEpisode();
-                }}
-                className="px-6 py-2 rounded-xl bg-violet-600 text-white text-xs font-semibold shadow-lg shadow-violet-600/30 transition cursor-pointer"
-              >
-                Play Now
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Loading Spinner */}
         {isLoading && !hasError && (
           <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-10">
@@ -218,9 +105,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         )}
       </div>
 
-      {/* Control Bar: Sub/Dub Selector, Episode Nav, Autoplay Toggle */}
+      {/* Control Bar: Sub/Dub Selector, Episode Nav */}
       <div className="glass-panel rounded-2xl p-4 sm:p-5 border border-slate-800/80 flex flex-col md:flex-row items-center justify-between gap-4">
-        {/* Left: Language Selector (SUB / DUB) & Autoplay Toggle */}
+        {/* Left: Language Selector (SUB / DUB) */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center bg-slate-950 rounded-xl p-1 border border-slate-800">
             <button
@@ -245,16 +132,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               DUB
             </button>
           </div>
-
-          <label className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={autoplayNext}
-              onChange={(e) => updateAutoplay(e.target.checked)}
-              className="rounded accent-violet-600"
-            />
-            <span>Autoplay Next</span>
-          </label>
         </div>
 
         {/* Right: Previous & Next Episode controls */}
@@ -285,74 +162,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             </button>
           )}
         </div>
-      </div>
-
-      {/* Authorised Episode Download Panel */}
-      <div className="glass-panel rounded-2xl p-4 sm:p-5 border border-slate-800/80 space-y-3">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-violet-400 shrink-0">
-              <Download className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h4 className="text-xs font-bold text-white">Authorised Episode Download</h4>
-                {downloadInfo?.isStreamingOnly && (
-                  <span className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-[10px] text-amber-400 font-semibold">
-                    Streaming Only Provider (AniEmbed)
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] text-slate-400 mt-0.5">
-                {downloadInfo?.isAvailable && downloadInfo.qualities && downloadInfo.qualities.length > 0
-                  ? `Authorised direct video files available (${downloadInfo.qualities.length} resolutions).`
-                  : downloadInfo?.message || 'Downloads are not available for this episode.'}
-              </p>
-            </div>
-          </div>
-
-          {downloadInfo?.isAvailable && downloadInfo.qualities && downloadInfo.qualities.length > 0 ? (
-            <div className="flex flex-wrap items-center gap-2 self-end sm:self-auto">
-              {/* Quality selector */}
-              <div className="flex items-center bg-slate-950 rounded-xl p-1 border border-slate-800">
-                {downloadInfo.qualities.map((q) => (
-                  <button
-                    key={`${q.quality}_${q.url}`}
-                    onClick={() => setSelectedQualityUrl(q.url)}
-                    className={`px-3 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
-                      selectedQualityUrl === q.url
-                        ? 'bg-violet-600 text-white shadow-md shadow-violet-600/30'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {q.quality} ({q.fileSize})
-                  </button>
-                ))}
-              </div>
-
-              <button
-                onClick={handleDownloadClick}
-                disabled={downloading}
-                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-emerald-600 text-white font-semibold text-xs shadow-lg shadow-emerald-600/20 hover:bg-emerald-500 transition disabled:opacity-50 cursor-pointer shrink-0"
-              >
-                <Download className="w-4 h-4" />
-                <span>{downloading ? 'Verifying...' : 'Download File'}</span>
-              </button>
-            </div>
-          ) : (
-            <span className="px-4 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-slate-400 font-medium self-end sm:self-auto">
-              Downloads Unavailable
-            </span>
-          )}
-        </div>
-
-        {/* Feedback message banner */}
-        {downloadFeedback && (
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-600/10 border border-violet-500/20 text-xs text-violet-300 animate-fade-in">
-            <CheckCircle2 className="w-4 h-4 text-violet-400 shrink-0" />
-            <span>{downloadFeedback}</span>
-          </div>
-        )}
       </div>
     </div>
   );

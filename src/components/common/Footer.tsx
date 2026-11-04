@@ -17,7 +17,7 @@ export const Footer: React.FC<{ setActiveTab: (tab: string) => void }> = ({ setA
             </span>
           </div>
           <p className="text-[#a09cb0] leading-relaxed">
-            Enter the next anime universe. Discover trending shows, release schedules, news, trailers, and personal watchlists with high fidelity.
+            Enter the next anime universe. Discover trending shows, release schedules, news, and personal watchlists with high fidelity.
           </p>
         </div>
 
