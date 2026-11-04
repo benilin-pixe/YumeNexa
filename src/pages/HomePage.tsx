@@ -223,38 +223,6 @@ export const HomePage: React.FC<HomePageProps> = ({
         onWatch={onWatchAnime}
         onViewAll={() => onNavigateTab('explore')}
       />
-
-      {/* Editorial News Feed */}
-      <section className="space-y-4">
-        <div className="flex items-end justify-between border-b border-slate-200/80 dark:border-slate-800/60 pb-3">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold font-display text-slate-900 dark:text-white tracking-tight">
-              Latest Anime Editorial & News
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Industry announcements, studio updates, and adaptation reveals
-            </p>
-          </div>
-          <button
-            onClick={() => onNavigateTab('news')}
-            className="flex items-center gap-1 text-xs font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-500 dark:hover:text-violet-300 group transition cursor-pointer"
-          >
-            <span>All News</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {news.map((article) => (
-            <NewsCard key={article.id} article={article} onSelect={() => setSelectedNewsArticle(article)} />
-          ))}
-        </div>
-      </section>
-
-      {/* Article Modal Reader */}
-      {selectedNewsArticle && (
-        <NewsDetailModal article={selectedNewsArticle} onClose={() => setSelectedNewsArticle(null)} />
-      )}
     </div>
   );
 };

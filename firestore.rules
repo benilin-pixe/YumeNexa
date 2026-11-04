@@ -11,7 +11,9 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.email == 'benilin76@gmail.com' ||
+        (request.auth.token != null && 'admin' in request.auth.token && request.auth.token.admin == true) ||
         exists(/databases/$(database)/documents/adminRoles/$(request.auth.uid)) ||
+        exists(/databases/$(database)/documents/adminRoles/$(request.auth.token.email)) ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
       );
@@ -51,6 +53,30 @@ service cloud.firestore {
     match /adminAuditLogs/{logId} {
       allow read, create: if isAdmin();
       allow update, delete: if false;
+    }
+
+    // Error Logs (Client error capture allowed, read/manage restricted to admin)
+    match /errorLogs/{logId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Site Stats & Analytics (Client pageview counter increment allowed, read/manage restricted to admin)
+    match /siteStats/{statId} {
+      allow create, update: if true;
+      allow read, delete: if isAdmin();
+    }
+
+    // Performance & Web Vitals
+    match /performanceLogs/{perfId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Site Settings (Maintenance mode, banner config, feature flags)
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     // Site Configuration & Featured Content
@@ -98,16 +124,22 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // News
+    // News Cache Articles
     match /news/{articleId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if true;
     }
 
-    // News Sources
+    // News Sources Health & Status
     match /news_sources/{sourceId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if true;
+    }
+
+    // News Cache Metadata (e.g. news_meta/cache)
+    match /news_meta/{metaId} {
+      allow read: if true;
+      allow write: if true;
     }
   }
 }

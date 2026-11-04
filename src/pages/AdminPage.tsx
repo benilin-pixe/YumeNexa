@@ -743,27 +743,7 @@ export const AdminPage: React.FC = () => {
               {/* Manage Link Cards Section */}
               <div className="space-y-4">
                 <h2 className="text-lg font-extrabold font-display text-[#f2effc]">Platform Controls</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* News Management Card */}
-                  <div
-                    onClick={() => navigateToRoute('news')}
-                    className="yorukai-card p-6 rounded-xl bg-[#161224] border border-[#2a243a] cursor-pointer hover:-translate-y-1 hover:border-purple-500/60 hover:shadow-xl hover:shadow-purple-600/20 transition-all duration-300 space-y-3 group"
-                  >
-                    <div className="p-3 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30 w-fit group-hover:scale-105 transition-transform">
-                      <Rss className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h3 className="text-base font-bold font-display text-[#f2effc] group-hover:text-purple-400 transition">
-                        News Management
-                      </h3>
-                      <p className="text-xs text-[#a09cb0] mt-1 leading-relaxed">
-                        Configure RSS feed sources, trigger manual feed ingestion, and monitor article sync logs.
-                      </p>
-                    </div>
-                    <div className="text-xs font-semibold text-purple-400 flex items-center gap-1 pt-2">
-                      <span>Manage News Feeds →</span>
-                    </div>
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                   {/* Provider Management Card */}
                   <div

@@ -293,3 +293,78 @@ export function parseFeedXml(xml: string): ParsedFeedItem[] {
 
   return items;
 }
+
+import Parser from 'rss-parser';
+
+const rssParser = new Parser({
+  customFields: {
+    item: [
+      ['media:thumbnail', 'mediaThumbnail'],
+      ['media:content', 'mediaContent'],
+      ['content:encoded', 'contentEncoded'],
+      ['dc:creator', 'dcCreator'],
+    ],
+  },
+});
+
+/**
+ * Robust RSS parser using official 'rss-parser' package with string parser fallback
+ */
+export async function parseFeedWithRssParser(xml: string): Promise<ParsedFeedItem[]> {
+  try {
+    const feed = await rssParser.parseString(xml);
+    const items: ParsedFeedItem[] = [];
+    const seenUrls = new Set<string>();
+
+    for (const item of feed.items || []) {
+      const rawLink = item.link || item.guid || '';
+      if (!rawLink || !rawLink.startsWith('http')) continue;
+
+      const normalizedLink = normalizeArticleUrl(rawLink);
+      if (seenUrls.has(normalizedLink)) continue;
+      seenUrls.add(normalizedLink);
+
+      const title = item.title?.trim() || 'Untitled Anime Article';
+      const rawDesc = item['contentEncoded'] || item.content || item.summary || item.contentSnippet || item.title || '';
+      const excerpt = cleanExcerpt(rawDesc, 400);
+
+      const rawDate = item.pubDate || item.isoDate || new Date().toISOString();
+      let publishedAt: string;
+      try {
+        const parsed = new Date(rawDate);
+        publishedAt = isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
+      } catch {
+        publishedAt = new Date().toISOString();
+      }
+
+      const author = item['dcCreator'] || item.creator || 'Editorial Staff';
+      let imageUrl: string | undefined;
+
+      if (item['mediaThumbnail'] && item['mediaThumbnail'].$ && item['mediaThumbnail'].$.url) {
+        imageUrl = item['mediaThumbnail'].$.url;
+      } else if (item['mediaContent'] && item['mediaContent'].$ && item['mediaContent'].$.url) {
+        imageUrl = item['mediaContent'].$.url;
+      } else if (item.enclosure && item.enclosure.url && item.enclosure.type?.includes('image')) {
+        imageUrl = item.enclosure.url;
+      }
+
+      items.push({
+        id: generateArticleId(normalizedLink),
+        title,
+        link: normalizedLink,
+        excerpt,
+        publishedAt,
+        author: String(author).replace(/<[^>]+>/g, '').trim(),
+        imageUrl,
+        category: assignNewsCategory(title, excerpt),
+      });
+    }
+
+    if (items.length > 0) return items;
+  } catch (parserErr) {
+    console.warn('[RSS Parser Warning] Falling back to custom string parser:', parserErr);
+  }
+
+  return parseFeedXml(xml);
+}
+

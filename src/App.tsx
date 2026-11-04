@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { WatchlistProvider } from './contexts/WatchlistContext';
@@ -10,6 +10,7 @@ import { AnnouncementBanner } from './components/common/AnnouncementBanner';
 import { GlobalSearchModal } from './components/common/GlobalSearchModal';
 import { AuthModal } from './components/auth/AuthModal';
 import { AnimeDetailModal } from './components/anime/AnimeDetailModal';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 import { HomePage } from './pages/HomePage';
 import { ExplorePage } from './pages/ExplorePage';
@@ -18,14 +19,29 @@ import { SchedulePage } from './pages/SchedulePage';
 import { NewsPage } from './pages/NewsPage';
 import { WatchlistPage } from './pages/WatchlistPage';
 import { AccountPage } from './pages/AccountPage';
-import { AdminPage } from './pages/AdminPage';
 
 import { AnimeMedia } from './types/anime';
 import { NewsArticle } from './types/news';
 import { updatePageSEO } from './utils/seo';
+import { trackPageView, initGlobalErrorListeners, checkMaintenanceMode } from './utils/analyticsTracker';
+
+// Lazy load AdminPage so it is never included in the main bundle for normal users
+const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })));
+
+function AdminLoadingFallback() {
+  return (
+    <div className="glass-panel rounded-3xl p-12 text-center my-12 space-y-4 max-w-md mx-auto border border-violet-500/30">
+      <div className="w-12 h-12 border-4 border-violet-500/30 border-t-violet-500 rounded-full animate-spin mx-auto" />
+      <p className="text-xs font-semibold text-slate-300 font-display uppercase tracking-wider">
+        Loading Secure Admin Dashboard...
+      </p>
+    </div>
+  );
+}
 
 export function YumeNexaApp() {
   const [activeTab, setActiveTab] = useState<string>('home');
+  const [maintenance, setMaintenance] = useState<{ active: boolean; message?: string }>({ active: false });
 
   // Modals & Active Selections
   const [detailAnimeId, setDetailAnimeId] = useState<number | null>(null);
@@ -37,7 +53,13 @@ export function YumeNexaApp() {
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
 
-  // Sync SEO Title according to tab
+  // Global listeners and analytics tracking
+  useEffect(() => {
+    initGlobalErrorListeners();
+    checkMaintenanceMode().then(setMaintenance);
+  }, []);
+
+  // Sync SEO Title and track pageview according to tab
   useEffect(() => {
     const tabTitles: Record<string, string> = {
       home: 'Enter the Next Anime Universe',
@@ -50,6 +72,7 @@ export function YumeNexaApp() {
       admin: 'Admin Dashboard',
     };
     updatePageSEO(tabTitles[activeTab] || 'Anime Universe');
+    trackPageView(activeTab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [activeTab]);
 
@@ -70,6 +93,13 @@ export function YumeNexaApp() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 dark:bg-slate-950 dark:text-slate-100 light:bg-slate-50 light:text-slate-900 transition-colors duration-200 selection:bg-violet-600 selection:text-white">
+      {/* Maintenance Mode Banner / Alert */}
+      {maintenance.active && activeTab !== 'admin' && (
+        <div className="bg-amber-500/20 border-b border-amber-500/30 text-amber-300 text-xs px-4 py-2.5 text-center font-semibold flex items-center justify-center gap-2">
+          <span>🛠️ {maintenance.message}</span>
+        </div>
+      )}
+
       {/* Top System Announcement */}
       <AnnouncementBanner />
 
@@ -83,44 +113,50 @@ export function YumeNexaApp() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-        {activeTab === 'home' && (
-          <HomePage
-            onSelectAnime={handleSelectAnime}
-            onWatchAnime={handleWatchAnime}
-            onNavigateTab={setActiveTab}
-          />
-        )}
+        <ErrorBoundary fallbackRoute={activeTab}>
+          {activeTab === 'home' && (
+            <HomePage
+              onSelectAnime={handleSelectAnime}
+              onWatchAnime={handleWatchAnime}
+              onNavigateTab={setActiveTab}
+            />
+          )}
 
-        {activeTab === 'explore' && (
-          <ExplorePage onSelectAnime={handleSelectAnime} onWatchAnime={handleWatchAnime} />
-        )}
+          {activeTab === 'explore' && (
+            <ExplorePage onSelectAnime={handleSelectAnime} onWatchAnime={handleWatchAnime} />
+          )}
 
-        {activeTab === 'watch' && (
-          <WatchPage
-            anime={watchAnime}
-            initialEpisode={watchEpisode}
-            onBackToExplore={() => setActiveTab('explore')}
-            onSelectAnime={handleSelectAnime}
-          />
-        )}
+          {activeTab === 'watch' && (
+            <WatchPage
+              anime={watchAnime}
+              initialEpisode={watchEpisode}
+              onBackToExplore={() => setActiveTab('explore')}
+              onSelectAnime={handleSelectAnime}
+            />
+          )}
 
-        {activeTab === 'schedule' && (
-          <SchedulePage onSelectAnime={handleSelectAnime} onWatchAnime={handleWatchAnime} />
-        )}
+          {activeTab === 'schedule' && (
+            <SchedulePage onSelectAnime={handleSelectAnime} onWatchAnime={handleWatchAnime} />
+          )}
 
-        {activeTab === 'news' && <NewsPage />}
+          {activeTab === 'news' && <NewsPage />}
 
-        {activeTab === 'watchlist' && (
-          <WatchlistPage
-            onSelectAnime={handleSelectAnime}
-            onWatchAnime={handleWatchAnime}
-            onOpenAuth={() => setIsAuthOpen(true)}
-          />
-        )}
+          {activeTab === 'watchlist' && (
+            <WatchlistPage
+              onSelectAnime={handleSelectAnime}
+              onWatchAnime={handleWatchAnime}
+              onOpenAuth={() => setIsAuthOpen(true)}
+            />
+          )}
 
-        {activeTab === 'account' && <AccountPage />}
+          {activeTab === 'account' && <AccountPage />}
 
-        {activeTab === 'admin' && <AdminPage />}
+          {activeTab === 'admin' && (
+            <Suspense fallback={<AdminLoadingFallback />}>
+              <AdminPage />
+            </Suspense>
+          )}
+        </ErrorBoundary>
       </main>
 
       {/* Footer */}

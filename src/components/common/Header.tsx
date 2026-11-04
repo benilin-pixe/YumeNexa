@@ -43,7 +43,6 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'explore', label: 'Explore', icon: Compass },
     { id: 'watch', label: 'Watch', icon: Tv },
     { id: 'schedule', label: 'Schedule', icon: Calendar },
-    { id: 'news', label: 'News', icon: Newspaper },
     { id: 'watchlist', label: 'Watchlist', icon: Bookmark },
   ];
 

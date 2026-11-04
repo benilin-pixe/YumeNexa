@@ -20,6 +20,9 @@ export interface NewsQueryResult {
   total: number;
   limit: number;
   offset: number;
+  cached?: boolean;
+  isStale?: boolean;
+  lastRefreshedAt?: string;
 }
 
 export interface NewsSourceItem {
@@ -46,8 +49,10 @@ export interface NewsRefreshLogItem {
   errorMessage?: string | null;
 }
 
+const CLIENT_CACHE_KEY = 'yumenexa_client_news_cache_v3';
+
 /**
- * Fetch articles from the public backend endpoint with caching and search filters
+ * Fetch articles from the public backend endpoint with caching, search filters, and localStorage fallback
  */
 export async function getNewsArticles(params?: {
   category?: string;
@@ -70,24 +75,85 @@ export async function getNewsArticles(params?: {
   }
 
   const endpoint = `/api/news?${query.toString()}`;
-  const res = await fetch(endpoint, {
-    headers: {
-      Accept: 'application/json',
-      'x-requested-by': 'yumenexa-client',
-    },
-  });
 
-  if (!res.ok) {
-    throw new Error(`Failed to load news articles (HTTP ${res.status})`);
+  try {
+    const res = await fetch(endpoint, {
+      headers: {
+        Accept: 'application/json',
+        'x-requested-by': 'yumenexa-client',
+      },
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const articles = data.articles || [];
+      const result: NewsQueryResult = {
+        articles,
+        total: data.total || articles.length,
+        limit: data.limit || 20,
+        offset: data.offset || 0,
+        cached: data.cached || false,
+        isStale: data.isStale || false,
+        lastRefreshedAt: data.lastRefreshedAt || new Date().toISOString(),
+      };
+
+      if (typeof window !== 'undefined' && window.localStorage && articles.length > 0) {
+        try {
+          window.localStorage.setItem(CLIENT_CACHE_KEY, JSON.stringify({
+            result,
+            savedAt: Date.now(),
+          }));
+        } catch {
+          // Ignore quota errors
+        }
+      }
+
+      return result;
+    }
+  } catch (fetchErr) {
+    console.warn('[NewsService] Network request failed, attempting localStorage fallback:', fetchErr);
   }
 
-  const data = await res.json();
-  return {
-    articles: data.articles || [],
-    total: data.total || 0,
-    limit: data.limit || 20,
-    offset: data.offset || 0,
-  };
+  // Fallback to localStorage if offline or network error occurs
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const raw = window.localStorage.getItem(CLIENT_CACHE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.result?.articles?.length > 0) {
+          let articles: NewsArticleRecord[] = parsed.result.articles;
+
+          if (params?.category && params.category !== 'All') {
+            articles = articles.filter((a) => a.category?.toLowerCase() === params.category!.toLowerCase());
+          }
+
+          if (params?.search && params.search.trim()) {
+            const term = params.search.trim().toLowerCase();
+            articles = articles.filter(
+              (a) =>
+                a.title.toLowerCase().includes(term) ||
+                (a.excerpt || '').toLowerCase().includes(term) ||
+                (a.sourceName || '').toLowerCase().includes(term)
+            );
+          }
+
+          return {
+            articles: articles.slice(params?.offset || 0, (params?.offset || 0) + (params?.limit || 20)),
+            total: articles.length,
+            limit: params?.limit || 20,
+            offset: params?.offset || 0,
+            cached: true,
+            isStale: true,
+            lastRefreshedAt: parsed.result.lastRefreshedAt || new Date(parsed.savedAt).toISOString(),
+          };
+        }
+      }
+    } catch {
+      // Ignore localStorage parse errors
+    }
+  }
+
+  throw new Error('Unable to fetch news articles and no offline cache available.');
 }
 
 import { auth } from '../config/firebase';

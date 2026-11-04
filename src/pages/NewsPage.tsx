@@ -34,6 +34,10 @@ export const NewsPage: React.FC = () => {
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
 
+  const [isStale, setIsStale] = useState<boolean>(false);
+  const [fromCache, setFromCache] = useState<boolean>(false);
+  const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
+
   // Active inline video playing card ID
   const [playingVideoCardId, setPlayingVideoCardId] = useState<string | null>(null);
 
@@ -69,6 +73,9 @@ export const NewsPage: React.FC = () => {
 
       setArticles(data.articles);
       setTotalCount(data.total);
+      setIsStale(data.isStale || false);
+      setFromCache(data.cached || false);
+      setLastRefreshedAt(data.lastRefreshedAt || new Date().toISOString());
     } catch (err: any) {
       console.error('Error loading news:', err);
       setError(err?.message || 'Failed to load news articles. Please try again.');
@@ -135,7 +142,11 @@ export const NewsPage: React.FC = () => {
         <div className="relative z-10 space-y-4 max-w-3xl">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 text-xs font-semibold uppercase tracking-wider">
             <Radio className="w-3.5 h-3.5 text-violet-400" />
-            <span>Live RSS Feed Aggregation</span>
+            <span>
+              {isStale
+                ? `Showing Cached News • Updated ${formatPublishedDate(lastRefreshedAt || undefined)}`
+                : 'Live RSS Feed Aggregation'}
+            </span>
           </div>
           <h1 className="text-3xl sm:text-5xl font-black font-display tracking-tight text-white">
             YumeNexa <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-300">Anime News</span>
