@@ -595,3 +595,43 @@ export function getAdminOverviewCounts() {
     recentLogs: systemLogs.slice(0, 10),
   };
 }
+
+let siteSettings = {
+  siteName: 'YumeNexa',
+  tagline: 'Enter the next anime universe.',
+  maintenanceMode: false,
+  maintenanceMessage: 'YumeNexa is currently undergoing scheduled platform upgrades. We will be back online shortly!',
+  featuredAnimeId: 21,
+  newsRefreshIntervalMinutes: 30,
+  autoApproveSources: true,
+};
+
+export function getSiteSettings() {
+  return siteSettings;
+}
+
+export function updateSiteSettings(newSettings: Partial<typeof siteSettings>) {
+  siteSettings = { ...siteSettings, ...newSettings };
+  addSystemLog('SETTINGS_UPDATE', `Updated site configuration settings.`, 'success');
+  return siteSettings;
+}
+
+export function getPlaybackMetricsData() {
+  const providersStatus = externalProviders.map((p) => ({
+    id: p.id,
+    label: p.label,
+    baseUrl: p.baseUrl,
+    status: p.lastCheckStatus || 'connected',
+    latencyMs: p.lastCheckLatencyMs || 35,
+    code: p.lastCheckCode || 200,
+    lastCheck: p.lastCheckTimestamp || new Date().toISOString(),
+  }));
+
+  return {
+    activeStreamsCount: 12,
+    totalPlaybackErrors: 2,
+    failedLookupsCount: 1,
+    providersStatus,
+    recentPlaybackLogs: systemLogs.filter((l) => l.jobName === 'SOURCE_TEST' || l.jobName === 'PROVIDER_CHECK'),
+  };
+}

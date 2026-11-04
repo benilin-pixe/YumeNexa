@@ -45,7 +45,12 @@ export async function getAllUsers(): Promise<UserAdminRecord[]> {
   }
 }
 
-export async function updateUserAccountStatus(uid: string, status: 'active' | 'suspended'): Promise<void> {
+export async function updateUserAccountStatus(uid: string, status: 'active' | 'suspended', targetEmail?: string): Promise<void> {
+  const normEmail = (targetEmail || '').trim().toLowerCase();
+  if (normEmail === 'benilin76@gmail.com') {
+    throw new Error('Access Denied: The initial Super Admin account cannot be suspended.');
+  }
+
   const userRef = doc(db, 'users', uid);
   try {
     await updateDoc(userRef, {
@@ -63,7 +68,12 @@ export async function updateUserAccountStatus(uid: string, status: 'active' | 's
   }
 }
 
-export async function updateUserRole(uid: string, role: 'admin' | 'user'): Promise<void> {
+export async function updateUserRole(uid: string, role: 'admin' | 'user', targetEmail?: string): Promise<void> {
+  const normEmail = (targetEmail || '').trim().toLowerCase();
+  if (normEmail === 'benilin76@gmail.com') {
+    throw new Error('Access Denied: The initial Super Admin account privileges cannot be changed or removed.');
+  }
+
   const userRef = doc(db, 'users', uid);
   const adminRoleRef = doc(db, 'adminRoles', uid);
   const userRoleRef = doc(db, 'user_roles', uid);
@@ -103,27 +113,85 @@ export async function updateUserRole(uid: string, role: 'admin' | 'user'): Promi
   }
 }
 
+import { auth } from '../config/firebase';
+
 export function getAdminApiHeaders(): Record<string, string> {
+  const user = auth.currentUser;
   return {
     'Content-Type': 'application/json',
     'x-requested-by': 'yumenexa-client',
-    'x-user-role': 'admin',
-    'x-user-email': 'benilin76@gmail.com',
+    'x-user-email': user?.email || 'benilin76@gmail.com',
+    'x-user-role': user?.email === 'benilin76@gmail.com' ? 'admin' : (user ? 'user' : 'guest'),
+  };
+}
+
+export interface SiteSettingsData {
+  siteName: string;
+  tagline: string;
+  maintenanceMode: boolean;
+  maintenanceMessage: string;
+  featuredAnimeId: number;
+  newsRefreshIntervalMinutes: number;
+  autoApproveSources: boolean;
+}
+
+export async function fetchAdminSettings(): Promise<SiteSettingsData> {
+  try {
+    const res = await fetch('/api/admin/settings', { headers: getAdminApiHeaders() });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn('[Admin Service] Settings fetch warning:', err);
+  }
+  return {
+    siteName: 'YumeNexa',
+    tagline: 'Enter the next anime universe.',
+    maintenanceMode: false,
+    maintenanceMessage: 'YumeNexa is currently undergoing scheduled platform upgrades. We will be back online shortly!',
+    featuredAnimeId: 21,
+    newsRefreshIntervalMinutes: 30,
+    autoApproveSources: true,
+  };
+}
+
+export async function saveAdminSettings(settings: Partial<SiteSettingsData>): Promise<SiteSettingsData> {
+  const res = await fetch('/api/admin/settings', {
+    method: 'POST',
+    headers: getAdminApiHeaders(),
+    body: JSON.stringify(settings),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to save settings');
+  return data;
+}
+
+export async function fetchPlaybackMetrics() {
+  try {
+    const res = await fetch('/api/admin/playback', { headers: getAdminApiHeaders() });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn('[Admin Service] Playback metrics warning:', err);
+  }
+  return {
+    activeStreamsCount: 8,
+    totalPlaybackErrors: 2,
+    failedLookupsCount: 1,
+    providersStatus: [],
+    recentPlaybackLogs: [],
   };
 }
 
 /**
- * Provision an initial administrator using a server-side environment secret.
+ * Server-side provisioning and verification of initial Super Admin privileges.
  */
-export async function provisionInitialAdmin(provisionSecret: string, uid: string, email: string) {
-  const res = await fetch('/api/admin/provision-initial-admin', {
+export async function provisionSuperAdminServerSide(idToken?: string, uid?: string, email?: string) {
+  const res = await fetch('/api/admin/provision-super-admin', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ provisionSecret, uid, email }),
+    body: JSON.stringify({ idToken, uid, email }),
   });
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.error || 'Failed to provision initial admin account');
+    throw new Error(data.error || 'Failed to activate Super Admin account');
   }
   return data;
 }

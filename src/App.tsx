@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { WatchlistProvider } from './contexts/WatchlistContext';
@@ -24,20 +24,6 @@ import { AnimeMedia } from './types/anime';
 import { NewsArticle } from './types/news';
 import { updatePageSEO } from './utils/seo';
 import { trackPageView, initGlobalErrorListeners, checkMaintenanceMode } from './utils/analyticsTracker';
-
-// Lazy load AdminPage so it is never included in the main bundle for normal users
-const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })));
-
-function AdminLoadingFallback() {
-  return (
-    <div className="glass-panel rounded-3xl p-12 text-center my-12 space-y-4 max-w-md mx-auto border border-violet-500/30">
-      <div className="w-12 h-12 border-4 border-violet-500/30 border-t-violet-500 rounded-full animate-spin mx-auto" />
-      <p className="text-xs font-semibold text-slate-300 font-display uppercase tracking-wider">
-        Loading Secure Admin Dashboard...
-      </p>
-    </div>
-  );
-}
 
 export function YumeNexaApp() {
   const [activeTab, setActiveTab] = useState<string>('home');
@@ -69,7 +55,6 @@ export function YumeNexaApp() {
       news: 'Anime News Centre',
       watchlist: 'My Personal Library',
       account: 'My Account Settings',
-      admin: 'Admin Dashboard',
     };
     updatePageSEO(tabTitles[activeTab] || 'Anime Universe');
     trackPageView(activeTab);
@@ -94,7 +79,7 @@ export function YumeNexaApp() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 dark:bg-slate-950 dark:text-slate-100 light:bg-slate-50 light:text-slate-900 transition-colors duration-200 selection:bg-violet-600 selection:text-white">
       {/* Maintenance Mode Banner / Alert */}
-      {maintenance.active && activeTab !== 'admin' && (
+      {maintenance.active && (
         <div className="bg-amber-500/20 border-b border-amber-500/30 text-amber-300 text-xs px-4 py-2.5 text-center font-semibold flex items-center justify-center gap-2">
           <span>🛠️ {maintenance.message}</span>
         </div>
@@ -150,12 +135,6 @@ export function YumeNexaApp() {
           )}
 
           {activeTab === 'account' && <AccountPage />}
-
-          {activeTab === 'admin' && (
-            <Suspense fallback={<AdminLoadingFallback />}>
-              <AdminPage />
-            </Suspense>
-          )}
         </ErrorBoundary>
       </main>
 

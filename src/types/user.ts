@@ -5,7 +5,8 @@ export interface UserProfile {
   email: string;
   displayName: string;
   photoURL?: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' | 'superadmin';
+  status?: 'active' | 'suspended';
   theme: 'dark' | 'light';
   createdAt: string;
   updatedAt: string;

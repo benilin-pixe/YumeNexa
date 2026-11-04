@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Compass, Tv, Calendar, Newspaper, Bookmark } from 'lucide-react';
+import { Sparkles, Compass, Tv, Calendar, Bookmark } from 'lucide-react';
 
 interface MobileNavProps {
   activeTab: string;

@@ -5,11 +5,9 @@ import {
   Sun,
   User,
   LogOut,
-  Shield,
   Compass,
   Tv,
   Calendar,
-  Newspaper,
   Bookmark,
   Sparkles,
   Menu,
@@ -32,7 +30,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSearch,
   onOpenAuth,
 }) => {
-  const { currentUser, userProfile, isAdmin, logout } = useAuth();
+  const { currentUser, userProfile, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
@@ -45,10 +43,6 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'schedule', label: 'Schedule', icon: Calendar },
     { id: 'watchlist', label: 'Watchlist', icon: Bookmark },
   ];
-
-  const allNavItems = isAdmin
-    ? [...navItems, { id: 'admin', label: 'Admin', icon: Shield }]
-    : navItems;
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -84,8 +78,8 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Zone 2: Navigation Links */}
         <nav className="hidden md:flex items-center gap-1.5 lg:gap-2">
-          {allNavItems.map((item) => {
-            const isActive = activeTab === item.id || (item.id === 'admin' && activeTab.startsWith('admin'));
+          {navItems.map((item) => {
+            const isActive = activeTab === item.id;
             return (
               <button
                 key={item.id}
@@ -96,7 +90,6 @@ export const Header: React.FC<HeaderProps> = ({
                     : 'text-[#a09cb0] hover:text-[#f8f7fa] hover:bg-[#161224]'
                 }`}
               >
-                {item.id === 'admin' && <Shield className="w-3.5 h-3.5 text-amber-400" />}
                 <span>{item.label}</span>
               </button>
             );
@@ -172,19 +165,6 @@ export const Header: React.FC<HeaderProps> = ({
                       <Bookmark className="w-4 h-4 text-purple-400" />
                       My Watchlist
                     </button>
-
-                    {isAdmin && (
-                      <button
-                        onClick={() => {
-                          setActiveTab('admin');
-                          setUserDropdownOpen(false);
-                        }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-amber-400 hover:bg-amber-500/10 rounded-xl transition cursor-pointer"
-                      >
-                        <Shield className="w-4 h-4 text-amber-400" />
-                        Admin Dashboard
-                      </button>
-                    )}
                   </div>
 
                   <div className="pt-1 border-t border-[#2a243a]">

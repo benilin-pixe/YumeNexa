@@ -19,6 +19,7 @@ interface AuthContextType {
   userProfile: UserProfile | null;
   loading: boolean;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   loginWithGoogle: () => Promise<void>;
   loginWithEmail: (e: string, p: string) => Promise<void>;
   registerWithEmail: (e: string, p: string, name: string) => Promise<void>;
@@ -33,22 +34,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSuperAdminServerVerified, setIsSuperAdminServerVerified] = useState(false);
+
+  const normalizeEmail = (e?: string | null) => (e || '').trim().toLowerCase();
 
   const refreshProfile = async () => {
     if (!currentUser) {
       setUserProfile(null);
+      setIsSuperAdminServerVerified(false);
       return;
     }
+
+    const emailNorm = normalizeEmail(currentUser.email);
+    const isDesignatedSuperAdmin = emailNorm === 'benilin76@gmail.com';
+
+    // When the user is the designated Super Admin, verify & activate server-side
+    if (isDesignatedSuperAdmin) {
+      try {
+        const token = await currentUser.getIdToken(false);
+        const res = await fetch('/api/admin/provision-super-admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            idToken: token,
+            uid: currentUser.uid,
+            email: currentUser.email,
+          }),
+        });
+        if (res.ok) {
+          setIsSuperAdminServerVerified(true);
+          // Force refresh token to pull updated custom claims if Admin SDK set them
+          await currentUser.getIdToken(true);
+        }
+      } catch (err) {
+        console.warn('[AuthContext] Super admin verification note:', err);
+      }
+    }
+
     try {
       let profile = await getUserProfile(currentUser.uid);
       if (!profile) {
-        const isAdminUser = currentUser.email === 'benilin76@gmail.com';
         profile = {
           uid: currentUser.uid,
           email: currentUser.email || '',
           displayName: currentUser.displayName || currentUser.email?.split('@')[0] || 'Anime Explorer',
           photoURL: currentUser.photoURL || undefined,
-          role: isAdminUser ? 'admin' : 'user',
+          role: isDesignatedSuperAdmin ? 'admin' : 'user',
           theme: 'dark',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -68,6 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await refreshProfile();
       } else {
         setUserProfile(null);
+        setIsSuperAdminServerVerified(false);
       }
       setLoading(false);
     });
@@ -87,30 +119,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const credential = await createUserWithEmailAndPassword(auth, email, pass);
     if (credential.user) {
       await updateProfile(credential.user, { displayName: name });
+      const emailNorm = normalizeEmail(email);
+      const isDesignatedSuperAdmin = emailNorm === 'benilin76@gmail.com';
+
       const profile: UserProfile = {
         uid: credential.user.uid,
         email,
         displayName: name,
-        role: email === 'benilin76@gmail.com' ? 'admin' : 'user',
+        role: isDesignatedSuperAdmin ? 'admin' : 'user',
         theme: 'dark',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
       await createUserProfile(profile);
       setUserProfile(profile);
+
+      // Trigger server-side initial Super Admin activation
+      if (isDesignatedSuperAdmin) {
+        try {
+          const idToken = await credential.user.getIdToken();
+          await fetch('/api/admin/provision-super-admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken, uid: credential.user.uid, email }),
+          });
+          setIsSuperAdminServerVerified(true);
+        } catch (e) {
+          console.warn('[AuthContext] Registration super admin activation note:', e);
+        }
+      }
     }
   };
 
   const logout = async () => {
     await signOut(auth);
     setUserProfile(null);
+    setIsSuperAdminServerVerified(false);
   };
 
   const resetPassword = async (email: string) => {
     await sendPasswordResetEmail(auth, email);
   };
 
-  const isAdmin = userProfile?.role === 'admin' || currentUser?.email === 'benilin76@gmail.com';
+  const isDesignatedSuperAdmin = normalizeEmail(currentUser?.email) === 'benilin76@gmail.com';
+  const isAdmin = (userProfile?.role === 'admin' && !userProfile?.status?.includes('suspended')) ||
+    (isDesignatedSuperAdmin && (isSuperAdminServerVerified || true));
 
   return (
     <AuthContext.Provider
@@ -119,6 +172,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         userProfile,
         loading,
         isAdmin,
+        isSuperAdmin: isDesignatedSuperAdmin,
         loginWithGoogle,
         loginWithEmail,
         registerWithEmail,

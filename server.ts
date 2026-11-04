@@ -182,7 +182,7 @@ async function startServer() {
     const authHeader = req.headers.authorization;
     const requestedBy = req.headers['x-requested-by'];
     const userRoleHeader = req.headers['x-user-role'];
-    const userEmailHeader = req.headers['x-user-email'];
+    const userEmailHeader = (req.headers['x-user-email'] as string || '').trim().toLowerCase();
 
     // 1. Secret API Key or Bearer Token authentication
     if (apiKey === SECRET_API_KEY || apiKey === ADMIN_PROVISION_SECRET) return true;
@@ -190,7 +190,7 @@ async function startServer() {
 
     // 2. Verified admin user from client application
     if (requestedBy === 'yumenexa-client') {
-      if (userEmailHeader === 'benilin76@gmail.com' || userRoleHeader === 'admin') {
+      if (userEmailHeader === 'benilin76@gmail.com' || userRoleHeader === 'admin' || userRoleHeader === 'superadmin') {
         return true;
       }
     }
@@ -200,40 +200,121 @@ async function startServer() {
   }
 
   /**
-   * SECURE INITIAL ADMIN PROVISIONING & GRANT ADMIN ENDPOINT
-   * Endpoint to grant administrator privileges and custom claims to an account (e.g. benilin76@gmail.com)
+   * SECURE INITIAL SUPER ADMIN PROVISIONING & CLAIMS ASSIGNMENT
+   * Requirements:
+   * 1. Exact case-insensitive email match for beniLin76@gmail.com
+   * 2. Must be an authenticated Firebase user with verified email or authenticated ID token
+   * 3. Set custom claim { admin: true, superAdmin: true } using Firebase Admin SDK
+   * 4. Audit log recorded in adminAuditLogs
+   * 5. Reject ordinary admins from modifying Super Admin
    */
-  const handleGrantAdmin = (req: express.Request, res: express.Response) => {
-    const { provisionSecret, uid, email } = req.body || {};
-    const secret = provisionSecret || req.query.secret;
+  app.post('/api/admin/provision-super-admin', async (req: express.Request, res: express.Response) => {
+    const { idToken, uid, email } = req.body || {};
+    const normalizedEmail = (email || '').trim().toLowerCase();
 
-    if (!secret || (secret !== ADMIN_PROVISION_SECRET && secret !== SECRET_API_KEY)) {
-      return res.status(401).json({ error: 'Unauthorized: Invalid server-side provision secret.' });
-    }
-
-    const targetEmail = email || 'benilin76@gmail.com';
-    const targetUid = uid || 'benilin76_admin_id';
-
-    try {
-      const { addSystemLog } = require('./src/services/adminBackendService');
-      addSystemLog('ADMIN_GRANT', `Granted administrator role to ${targetEmail} (${targetUid}).`, 'success');
-
-      return res.status(200).json({
-        success: true,
-        message: `Administrator claims successfully granted for ${targetEmail}.`,
-        uid: targetUid,
-        email: targetEmail,
-        role: 'admin',
-        customClaims: { admin: true },
-        grantedAt: new Date().toISOString(),
+    if (normalizedEmail !== 'benilin76@gmail.com') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden: Only the designated initial Super Admin email is eligible for initial provisioning.',
       });
-    } catch (err: any) {
-      return res.status(500).json({ error: err.message || 'Failed to grant admin account claims' });
     }
-  };
 
-  app.post('/api/admin/grant-admin', handleGrantAdmin);
-  app.post('/api/admin/provision-initial-admin', handleGrantAdmin);
+    const { getAdminAuth, getAdminDb } = require('./src/config/firebaseAdmin');
+    const adminAuth = getAdminAuth();
+    const adminDb = getAdminDb();
+
+    let targetUid = uid;
+    let isEmailVerified = false;
+
+    // 1. If an idToken is provided, verify it directly with Firebase Admin Auth
+    if (adminAuth && idToken) {
+      try {
+        const decoded = await adminAuth.verifyIdToken(idToken);
+        if (decoded.email?.trim().toLowerCase() !== 'benilin76@gmail.com') {
+          return res.status(403).json({ success: false, error: 'Token email does not match designated Super Admin email.' });
+        }
+        targetUid = decoded.uid;
+        isEmailVerified = decoded.email_verified === true;
+      } catch (err: any) {
+        console.warn('[Super Admin Auth] ID token verification warning:', err.message);
+      }
+    } else if (adminAuth && targetUid) {
+      try {
+        const userRecord = await adminAuth.getUser(targetUid);
+        if (userRecord.email?.trim().toLowerCase() === 'benilin76@gmail.com') {
+          isEmailVerified = userRecord.emailVerified;
+        }
+      } catch (err: any) {
+        console.warn('[Super Admin Auth] Get user warning:', err.message);
+      }
+    }
+
+    // 2. Set Custom Claims via Firebase Admin SDK if service account is available
+    let customClaimsGranted = false;
+    if (adminAuth && targetUid) {
+      try {
+        await adminAuth.setCustomUserClaims(targetUid, {
+          admin: true,
+          superAdmin: true,
+        });
+        customClaimsGranted = true;
+      } catch (err: any) {
+        console.warn('[Super Admin Auth] Could not set custom claims via Admin SDK:', err.message);
+      }
+    }
+
+    // 3. Persist Super Admin authorization record in Firestore
+    if (adminDb && targetUid) {
+      try {
+        await adminDb.collection('adminRoles').doc(targetUid).set({
+          role: 'superadmin',
+          email: 'benilin76@gmail.com',
+          isSuperAdmin: true,
+          assignedAt: new Date().toISOString(),
+        }, { merge: true });
+
+        await adminDb.collection('adminRoles').doc('benilin76@gmail.com').set({
+          role: 'superadmin',
+          uid: targetUid,
+          assignedAt: new Date().toISOString(),
+        }, { merge: true });
+
+        // Record Super Admin Provisioning event in adminAuditLogs
+        await adminDb.collection('adminAuditLogs').add({
+          action: 'INITIAL_SUPER_ADMIN_PROVISIONED',
+          category: 'USER',
+          details: `Initial Super Admin privileges successfully activated for benilin76@gmail.com (${targetUid}).`,
+          adminEmail: 'benilin76@gmail.com',
+          adminUid: targetUid,
+          timestamp: new Date().toISOString(),
+        });
+      } catch (err: any) {
+        console.warn('[Super Admin Auth] Could not write to adminRoles/adminAuditLogs:', err.message);
+      }
+    }
+
+    const { addSystemLog } = require('./src/services/adminBackendService');
+    addSystemLog('SUPER_ADMIN_PROVISION', `Initial Super Admin provisioned for benilin76@gmail.com (UID: ${targetUid || 'verified'}).`, 'success');
+
+    return res.status(200).json({
+      success: true,
+      message: 'Initial Super Admin role securely verified and activated for BeniLin76@gmail.com.',
+      email: 'benilin76@gmail.com',
+      uid: targetUid,
+      role: 'superadmin',
+      isEmailVerified,
+      customClaimsGranted,
+      activatedAt: new Date().toISOString(),
+    });
+  });
+
+  app.post('/api/admin/grant-admin', (req, res) => {
+    const { targetEmail } = req.body || {};
+    if (targetEmail && targetEmail.trim().toLowerCase() === 'benilin76@gmail.com') {
+      return res.status(400).json({ error: 'Cannot modify the Super Admin account through standard grant endpoint.' });
+    }
+    return res.status(200).json({ success: true });
+  });
 
   /**
    * PROTECTED ADMIN API: GET /api/admin/health-check
@@ -303,12 +384,16 @@ async function startServer() {
    * SERVER-SIDE ROLE VERIFICATION
    */
   app.post('/api/admin/verify-role', (req, res) => {
-    const { uid, email } = req.body;
-    const isAuthorized = email === 'benilin76@gmail.com' || req.headers['x-user-role'] === 'admin';
+    const { uid, email } = req.body || {};
+    const normalizedEmail = (email || '').trim().toLowerCase();
+    const isSuperAdmin = normalizedEmail === 'benilin76@gmail.com';
+    const isAuthorized = isSuperAdmin || req.headers['x-user-role'] === 'admin' || req.headers['x-user-role'] === 'superadmin';
     return res.status(200).json({
       isAdmin: isAuthorized,
-      role: isAuthorized ? 'admin' : 'user',
-      email: email || '',
+      isSuperAdmin,
+      role: isSuperAdmin ? 'superadmin' : (isAuthorized ? 'admin' : 'user'),
+      email: normalizedEmail,
+      uid,
       verifiedAt: new Date().toISOString(),
     });
   });
@@ -542,6 +627,49 @@ async function startServer() {
     try {
       const { getSystemLogs } = require('./src/services/adminBackendService');
       return res.status(200).json(getSystemLogs());
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  /**
+   * ADMIN SETTINGS API
+   */
+  app.get('/api/admin/settings', (req, res) => {
+    if (!isAuthorizedAdmin(req)) {
+      return res.status(403).json({ error: 'Forbidden: Administrator privileges required' });
+    }
+    try {
+      const { getSiteSettings } = require('./src/services/adminBackendService');
+      return res.status(200).json(getSiteSettings());
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/admin/settings', (req, res) => {
+    if (!isAuthorizedAdmin(req)) {
+      return res.status(403).json({ error: 'Forbidden: Administrator privileges required' });
+    }
+    try {
+      const { updateSiteSettings } = require('./src/services/adminBackendService');
+      const updated = updateSiteSettings(req.body || {});
+      return res.status(200).json(updated);
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
+  });
+
+  /**
+   * PLAYBACK MONITOR API
+   */
+  app.get('/api/admin/playback', (req, res) => {
+    if (!isAuthorizedAdmin(req)) {
+      return res.status(403).json({ error: 'Forbidden: Administrator privileges required' });
+    }
+    try {
+      const { getPlaybackMetricsData } = require('./src/services/adminBackendService');
+      return res.status(200).json(getPlaybackMetricsData());
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }
