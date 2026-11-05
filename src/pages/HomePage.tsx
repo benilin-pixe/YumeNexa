@@ -17,8 +17,11 @@ import { UpcomingCountdownWidget } from '../components/home/UpcomingCountdownWid
 import { AnimeSection } from '../components/home/AnimeSection';
 import { NewsCard } from '../components/news/NewsCard';
 import { NewsDetailModal } from '../components/news/NewsDetailModal';
+import { Tv, ArrowRight, Bell, AlertTriangle, CheckCircle, Info, Sparkles } from 'lucide-react';
+import { subscribeToActiveAnnouncements } from '../services/firestoreService';
+import { SystemAnnouncement } from '../types/user';
 import { useWatchlist } from '../contexts/WatchlistContext';
-import { Tv, ArrowRight } from 'lucide-react';
+import { WatchHistoryItem } from '../types/user';
 
 interface HomePageProps {
   onSelectAnime: (anime: AnimeMedia) => void;
@@ -40,9 +43,17 @@ export const HomePage: React.FC<HomePageProps> = ({
   const [movies, setMovies] = useState<AnimeMedia[]>([]);
   const [countdowns, setCountdowns] = useState<AiringScheduleNode[]>([]);
   const [news, setNews] = useState<NewsArticle[]>([]);
+  const [announcements, setAnnouncements] = useState<SystemAnnouncement[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [selectedNewsArticle, setSelectedNewsArticle] = useState<NewsArticle | null>(null);
+
+  useEffect(() => {
+    const unsub = subscribeToActiveAnnouncements((list) => {
+      setAnnouncements(list);
+    });
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -103,6 +114,74 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   return (
     <div className="space-y-12 pb-16">
+      {/* Persistent System Alert Banners for All Users */}
+      {announcements.length > 0 && (
+        <div className="space-y-3 animate-in fade-in duration-300">
+          {announcements.map((ann) => {
+            const isWarning = ann.type === 'warning';
+            const isSuccess = ann.type === 'success';
+            return (
+              <div
+                key={ann.id}
+                className={`relative overflow-hidden rounded-2xl sm:rounded-3xl p-4 sm:p-5 border shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 ${
+                  isWarning
+                    ? 'bg-gradient-to-r from-amber-950/80 via-[#1f1610] to-[#161224] border-amber-500/40 text-amber-200'
+                    : isSuccess
+                    ? 'bg-gradient-to-r from-emerald-950/80 via-[#101f18] to-[#161224] border-emerald-500/40 text-emerald-200'
+                    : 'bg-gradient-to-r from-purple-950/80 via-[#1d1830] to-[#161224] border-purple-500/40 text-purple-200'
+                }`}
+              >
+                <div className="flex items-start sm:items-center gap-3.5">
+                  <div
+                    className={`p-2.5 rounded-2xl shrink-0 border ${
+                      isWarning
+                        ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+                        : isSuccess
+                        ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                        : 'bg-purple-500/20 border-purple-500/40 text-purple-300'
+                    }`}
+                  >
+                    {isWarning ? (
+                      <AlertTriangle className="w-5 h-5 animate-pulse" />
+                    ) : isSuccess ? (
+                      <CheckCircle className="w-5 h-5" />
+                    ) : (
+                      <Bell className="w-5 h-5 animate-bounce" />
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
+                          isWarning
+                            ? 'bg-amber-500/30 text-amber-200 border border-amber-500/50'
+                            : isSuccess
+                            ? 'bg-emerald-500/30 text-emerald-200 border border-emerald-500/50'
+                            : 'bg-purple-500/30 text-purple-200 border border-purple-500/50'
+                        }`}
+                      >
+                        System Broadcast
+                      </span>
+                      <h3 className="text-sm sm:text-base font-black font-display text-white">
+                        {ann.title}
+                      </h3>
+                    </div>
+                    <p className="text-xs sm:text-sm text-[#d4cff2] mt-1 leading-relaxed">
+                      {ann.content}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="shrink-0 flex items-center gap-2 text-[11px] text-[#a09cb0] font-mono self-end sm:self-center">
+                  <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Live Alert</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Hero Carousel */}
       <HeroCarousel items={trending.slice(0, 5)} onSelect={onSelectAnime} onWatch={onWatchAnime} />
 
@@ -125,7 +204,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {watchHistory.slice(0, 4).map((item) => (
+            {watchHistory.slice(0, 4).map((item: WatchHistoryItem) => (
               <div
                 key={`${item.animeId}_ep${item.episodeNumber}`}
                 onClick={() =>

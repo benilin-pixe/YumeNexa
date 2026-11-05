@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Info, AlertTriangle, CheckCircle, X } from 'lucide-react';
 import { SystemAnnouncement } from '../../types/user';
-import { getActiveAnnouncements } from '../../services/firestoreService';
+import { subscribeToActiveAnnouncements } from '../../services/firestoreService';
 
 export const AnnouncementBanner: React.FC = () => {
   const [announcements, setAnnouncements] = useState<SystemAnnouncement[]>([]);
   const [dismissed, setDismissed] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    getActiveAnnouncements().then((data) => setAnnouncements(data));
+    const unsubscribe = subscribeToActiveAnnouncements((data) => {
+      setAnnouncements(data);
+    });
+    return () => unsubscribe();
   }, []);
 
   const activeBanner = announcements.find((a) => !dismissed[a.id]);

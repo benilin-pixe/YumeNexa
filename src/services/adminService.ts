@@ -1,12 +1,12 @@
 import { collection, getDocs, doc, updateDoc, setDoc, deleteDoc } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../config/firebase';
+import { db, auth, handleFirestoreError, OperationType } from '../config/firebase';
 import { logAdminAction } from './adminAuditService';
 
 export interface UserAdminRecord {
   uid: string;
   email: string;
   displayName?: string;
-  role: 'admin' | 'user';
+  role: 'admin' | 'user' | 'superadmin';
   status: 'active' | 'suspended';
   createdAt: string;
   updatedAt?: string;
@@ -21,8 +21,31 @@ export interface AdminOverviewStats {
   totalAuditLogs: number;
 }
 
+export class AuthRequiredError extends Error {
+  constructor(message = 'Authentication required.') {
+    super(message);
+    this.name = 'AuthRequiredError';
+  }
+}
+
+// Helper to wait until Firebase Auth is initialized
+export async function waitForAuthReady(): Promise<any> {
+  if (auth.currentUser) return auth.currentUser;
+  return new Promise((resolve) => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      unsubscribe();
+      resolve(user);
+    });
+  });
+}
+
 export async function getAllUsers(): Promise<UserAdminRecord[]> {
   try {
+    const currentUser = await waitForAuthReady();
+    if (!currentUser) {
+      throw new AuthRequiredError('User is not authenticated.');
+    }
+
     const snapshot = await getDocs(collection(db, 'users'));
     const users: UserAdminRecord[] = [];
     snapshot.forEach((docSnap) => {
@@ -39,8 +62,15 @@ export async function getAllUsers(): Promise<UserAdminRecord[]> {
     });
 
     return users;
-  } catch (err) {
-    console.error('[Admin Service] Get users error:', err);
+  } catch (err: any) {
+    if (err instanceof AuthRequiredError) {
+      // Quietly return empty array or handle quietly
+      return [];
+    }
+    if (err?.message?.includes('PERMISSION_DENIED') || err?.code === 'permission-denied') {
+      throw new Error("You don't have admin access.");
+    }
+    console.error('[Admin Service] Get users error:', err?.message || err);
     return [];
   }
 }
@@ -112,8 +142,6 @@ export async function updateUserRole(uid: string, role: 'admin' | 'user', target
     handleFirestoreError(err, OperationType.UPDATE, `users/${uid}`);
   }
 }
-
-import { auth } from '../config/firebase';
 
 export function getAdminApiHeaders(): Record<string, string> {
   const user = auth.currentUser;

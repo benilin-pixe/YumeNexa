@@ -16,8 +16,10 @@ import { getUserProfile, createUserProfile } from '../services/firestoreService'
 
 interface AuthContextType {
   currentUser: User | null;
+  user: User | null;
   userProfile: UserProfile | null;
   loading: boolean;
+  authLoading: boolean;
   isAdmin: boolean;
   isSuperAdmin: boolean;
   loginWithGoogle: () => Promise<void>;
@@ -169,8 +171,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider
       value={{
         currentUser,
+        user: currentUser,
         userProfile,
         loading,
+        authLoading: loading,
         isAdmin,
         isSuperAdmin: isDesignatedSuperAdmin,
         loginWithGoogle,

@@ -10,6 +10,7 @@ import {
   where,
   orderBy,
   limit,
+  onSnapshot,
 } from 'firebase/firestore';
 import { db, OperationType, handleFirestoreError } from '../config/firebase';
 import { UserProfile, WatchlistItem, WatchHistoryItem, SystemAnnouncement, WatchlistStatus } from '../types/user';
@@ -140,6 +141,37 @@ export async function saveWatchProgress(item: Omit<WatchHistoryItem, 'id'>): Pro
 }
 
 // System Announcements
+export function subscribeToActiveAnnouncements(
+  callback: (announcements: SystemAnnouncement[]) => void
+): () => void {
+  const path = 'announcements';
+  try {
+    const q = query(collection(db, path), where('active', '==', true));
+    return onSnapshot(
+      q,
+      (snap) => {
+        const announcements: SystemAnnouncement[] = [];
+        snap.forEach((d) => {
+          announcements.push({ ...(d.data() as SystemAnnouncement), id: d.id });
+        });
+        callback(
+          announcements.sort(
+            (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+          )
+        );
+      },
+      (err) => {
+        console.warn('onSnapshot fallback for announcements:', err);
+        getActiveAnnouncements().then(callback);
+      }
+    );
+  } catch (err) {
+    console.warn('subscribeToActiveAnnouncements error:', err);
+    getActiveAnnouncements().then(callback);
+    return () => {};
+  }
+}
+
 export async function getActiveAnnouncements(): Promise<SystemAnnouncement[]> {
   const path = 'announcements';
   try {
@@ -156,16 +188,52 @@ export async function getActiveAnnouncements(): Promise<SystemAnnouncement[]> {
   }
 }
 
-export async function createAnnouncement(announcement: Omit<SystemAnnouncement, 'id'>): Promise<string> {
+export async function createAnnouncement(
+  announcement: Omit<SystemAnnouncement, 'id' | 'createdAt'> & { createdAt?: string }
+): Promise<string> {
   const path = 'announcements';
   const newRef = doc(collection(db, path));
   try {
     await setDoc(newRef, {
       ...announcement,
-      createdAt: new Date().toISOString(),
+      createdAt: announcement.createdAt || new Date().toISOString(),
     });
     return newRef.id;
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, `${path}/${newRef.id}`);
   }
 }
+
+export async function getAllAnnouncements(): Promise<SystemAnnouncement[]> {
+  const path = 'announcements';
+  try {
+    const snap = await getDocs(collection(db, path));
+    const list: SystemAnnouncement[] = [];
+    snap.forEach((d) => {
+      list.push({ ...(d.data() as SystemAnnouncement), id: d.id });
+    });
+    return list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+  } catch (err) {
+    console.warn('Could not fetch all announcements from Firestore:', err);
+    return [];
+  }
+}
+
+export async function toggleAnnouncementActive(id: string, active: boolean): Promise<void> {
+  const path = `announcements/${id}`;
+  try {
+    await updateDoc(doc(db, 'announcements', id), { active });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.UPDATE, path);
+  }
+}
+
+export async function deleteAnnouncement(id: string): Promise<void> {
+  const path = `announcements/${id}`;
+  try {
+    await deleteDoc(doc(db, 'announcements', id));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, path);
+  }
+}
+

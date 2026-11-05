@@ -19,6 +19,7 @@ import { SchedulePage } from './pages/SchedulePage';
 import { NewsPage } from './pages/NewsPage';
 import { WatchlistPage } from './pages/WatchlistPage';
 import { AccountPage } from './pages/AccountPage';
+import { AdminPage } from './pages/AdminPage';
 
 import { AnimeMedia } from './types/anime';
 import { NewsArticle } from './types/news';
@@ -26,7 +27,12 @@ import { updatePageSEO } from './utils/seo';
 import { trackPageView, initGlobalErrorListeners, checkMaintenanceMode } from './utils/analyticsTracker';
 
 export function YumeNexaApp() {
-  const [activeTab, setActiveTab] = useState<string>('home');
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
+      return 'admin';
+    }
+    return 'home';
+  });
   const [maintenance, setMaintenance] = useState<{ active: boolean; message?: string }>({ active: false });
 
   // Modals & Active Selections
@@ -43,6 +49,16 @@ export function YumeNexaApp() {
   useEffect(() => {
     initGlobalErrorListeners();
     checkMaintenanceMode().then(setMaintenance);
+
+    const handlePopState = () => {
+      if (window.location.pathname.startsWith('/admin')) {
+        setActiveTab('admin');
+      } else {
+        setActiveTab('home');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   // Sync SEO Title and track pageview according to tab
@@ -55,10 +71,21 @@ export function YumeNexaApp() {
       news: 'Anime News Centre',
       watchlist: 'My Personal Library',
       account: 'My Account Settings',
+      admin: 'Admin Center',
     };
     updatePageSEO(tabTitles[activeTab] || 'Anime Universe');
     trackPageView(activeTab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    if (activeTab === 'admin') {
+      if (window.location.pathname !== '/admin') {
+        window.history.pushState(null, '', '/admin' + (window.location.hash || ''));
+      }
+    } else {
+      if (window.location.pathname.startsWith('/admin')) {
+        window.history.pushState(null, '', '/');
+      }
+    }
   }, [activeTab]);
 
   const handleSelectAnime = (anime: AnimeMedia) => {
@@ -135,6 +162,10 @@ export function YumeNexaApp() {
           )}
 
           {activeTab === 'account' && <AccountPage />}
+
+          {activeTab === 'admin' && (
+            <AdminPage onExitAdmin={() => setActiveTab('home')} />
+          )}
         </ErrorBoundary>
       </main>
 

@@ -24,9 +24,9 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // User profiles (with privilege escalation protection)
+    // User profiles (owner access + admin full access)
     match /users/{userId} {
-      allow read: if isSignedIn();
+      allow get, list: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       allow create: if isSignedIn() && (
         request.auth.uid == userId && (
           !('role' in request.resource.data) ||
