@@ -17,6 +17,7 @@ import { UpcomingCountdownWidget } from '../components/home/UpcomingCountdownWid
 import { AnimeSection } from '../components/home/AnimeSection';
 import { NewsCard } from '../components/news/NewsCard';
 import { NewsDetailModal } from '../components/news/NewsDetailModal';
+import { TrendsSection } from '../components/home/TrendsSection';
 import { Tv, ArrowRight, Bell, AlertTriangle, CheckCircle, Info, Sparkles } from 'lucide-react';
 import { subscribeToActiveAnnouncements } from '../services/firestoreService';
 import { SystemAnnouncement } from '../types/user';
@@ -184,6 +185,9 @@ export const HomePage: React.FC<HomePageProps> = ({
 
       {/* Hero Carousel */}
       <HeroCarousel items={trending.slice(0, 5)} onSelect={onSelectAnime} onWatch={onWatchAnime} />
+
+      {/* Trends Section */}
+      {!loading && trending.length > 0 && <TrendsSection trendingAnime={trending} />}
 
       {/* Continue Watching Section if Watch History exists */}
       {watchHistory.length > 0 && (

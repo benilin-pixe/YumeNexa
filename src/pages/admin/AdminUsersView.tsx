@@ -1,18 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Users,
-  Search,
-  Shield,
-  ShieldAlert,
-  UserCheck,
-  UserX,
-  RefreshCw,
-  Mail,
-  Calendar,
-  AlertTriangle,
-  CheckCircle,
-} from 'lucide-react';
-import { getAllUsers, updateUserAccountStatus, updateUserRole, UserAdminRecord } from '../../services/adminService';
+import { Users, Search, RefreshCw, Mail } from 'lucide-react';
+import { getAllUsers, UserAdminRecord } from '../../services/adminService';
 import { useAuth } from '../../contexts/AuthContext';
 
 export const AdminUsersView: React.FC = () => {
@@ -21,19 +9,6 @@ export const AdminUsersView: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<'ALL' | 'admin' | 'user'>('ALL');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'active' | 'suspended'>('ALL');
-  const [toastMessage, setToastMessage] = useState<{ text: string; error?: boolean } | null>(null);
-
-  // Confirm Modal
-  const [confirmModal, setConfirmModal] = useState<{
-    user: UserAdminRecord;
-    action: 'status' | 'role';
-    nextValue: string;
-  } | null>(null);
-
-  const showToast = (text: string, error = false) => {
-    setToastMessage({ text, error });
-    setTimeout(() => setToastMessage(null), 4500);
-  };
 
   const { user, isAdmin, authLoading } = useAuth() as any;
 
@@ -44,7 +19,7 @@ export const AdminUsersView: React.FC = () => {
       const data = await getAllUsers();
       setUsers(data || []);
     } catch (err: any) {
-      showToast(err.message || 'You don\'t have admin access.', true);
+      console.error('Failed to load users:', err);
     } finally {
       setLoading(false);
     }
@@ -55,31 +30,6 @@ export const AdminUsersView: React.FC = () => {
       loadUsers();
     }
   }, [authLoading, user, isAdmin]);
-
-  const handleExecuteAction = async () => {
-    if (!confirmModal) return;
-    const { user, action, nextValue } = confirmModal;
-
-    try {
-      if (action === 'status') {
-        await updateUserAccountStatus(user.uid, nextValue as any, user.email);
-        setUsers((prev) =>
-          prev.map((u) => (u.uid === user.uid ? { ...u, status: nextValue as any } : u))
-        );
-        showToast(`Account status updated to ${nextValue.toUpperCase()} for ${user.email}.`);
-      } else {
-        await updateUserRole(user.uid, nextValue as any, user.email);
-        setUsers((prev) =>
-          prev.map((u) => (u.uid === user.uid ? { ...u, role: nextValue as any } : u))
-        );
-        showToast(`Account role set to ${nextValue.toUpperCase()} for ${user.email}.`);
-      }
-    } catch (err: any) {
-      showToast(err.message || 'Operation failed', true);
-    } finally {
-      setConfirmModal(null);
-    }
-  };
 
   const filteredUsers = users.filter((u) => {
     const matchesSearch =
@@ -96,20 +46,6 @@ export const AdminUsersView: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
-      {/* Toast Alert */}
-      {toastMessage && (
-        <div
-          className={`p-3.5 rounded-2xl border text-xs font-semibold flex items-center gap-2 animate-in fade-in ${
-            toastMessage.error
-              ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
-              : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-          }`}
-        >
-          {toastMessage.error ? <AlertTriangle className="w-4 h-4 shrink-0" /> : <CheckCircle className="w-4 h-4 shrink-0" />}
-          <span>{toastMessage.text}</span>
-        </div>
-      )}
-
       {/* Filter / Search Bar */}
       <div className="bg-[#161224] rounded-3xl p-6 border border-[#2a243a] shadow-xl space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -119,7 +55,7 @@ export const AdminUsersView: React.FC = () => {
               <span>User Accounts Directory</span>
             </h2>
             <p className="text-xs text-[#a09cb0] mt-0.5">
-              Inspect user registrations, modify account roles, and manage platform permissions.
+              Inspect user registrations and account status.
             </p>
           </div>
 
@@ -134,7 +70,6 @@ export const AdminUsersView: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-          {/* Search */}
           <div className="relative sm:col-span-1">
             <Search className="absolute left-3.5 top-3 w-4 h-4 text-[#a09cb0]" />
             <input
@@ -146,7 +81,6 @@ export const AdminUsersView: React.FC = () => {
             />
           </div>
 
-          {/* Role Filter */}
           <div>
             <select
               value={roleFilter}
@@ -159,7 +93,6 @@ export const AdminUsersView: React.FC = () => {
             </select>
           </div>
 
-          {/* Status Filter */}
           <div>
             <select
               value={statusFilter}
@@ -198,8 +131,7 @@ export const AdminUsersView: React.FC = () => {
                   <th className="py-3 px-5">User Profile</th>
                   <th className="py-3 px-4">Role</th>
                   <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4">Registered Date</th>
-                  <th className="py-3 px-5 text-right">Actions</th>
+                  <th className="py-3 px-5 text-right">Registered Date</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#2a243a]">
@@ -249,48 +181,8 @@ export const AdminUsersView: React.FC = () => {
                         </span>
                       </td>
 
-                      <td className="py-3.5 px-4 text-[#a09cb0] font-mono text-[11px]">
+                      <td className="py-3.5 px-5 text-right text-[#a09cb0] font-mono text-[11px]">
                         {new Date(u.createdAt).toLocaleDateString()}
-                      </td>
-
-                      <td className="py-3.5 px-5 text-right space-x-2">
-                        {isInitialAdmin ? (
-                          <span className="text-[10px] text-amber-400/80 font-mono italic px-2.5 py-1 bg-amber-500/10 rounded-full border border-amber-500/20">
-                            Immutable Root
-                          </span>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() =>
-                                setConfirmModal({
-                                  user: u,
-                                  action: 'status',
-                                  nextValue: u.status === 'active' ? 'suspended' : 'active',
-                                })
-                              }
-                              className={`px-3 py-1 rounded-full text-[11px] font-semibold transition cursor-pointer ${
-                                u.status === 'active'
-                                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30'
-                                  : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30'
-                              }`}
-                            >
-                              {u.status === 'active' ? 'Suspend' : 'Reactivate'}
-                            </button>
-
-                            <button
-                              onClick={() =>
-                                setConfirmModal({
-                                  user: u,
-                                  action: 'role',
-                                  nextValue: u.role === 'admin' ? 'user' : 'admin',
-                                })
-                              }
-                              className="btn-secondary-pill px-3 py-1 text-[11px] font-semibold cursor-pointer"
-                            >
-                              Make {u.role === 'admin' ? 'User' : 'Admin'}
-                            </button>
-                          </>
-                        )}
                       </td>
                     </tr>
                   );
@@ -300,45 +192,6 @@ export const AdminUsersView: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* Confirmation Modal */}
-      {confirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
-          <div className="relative w-full max-w-md rounded-3xl bg-[#161224] border border-[#2a243a] p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold font-display text-white">
-                  Confirm Account {confirmModal.action === 'status' ? 'Status' : 'Role'} Update
-                </h3>
-                <p className="text-xs text-[#a09cb0]">Administrator verification required</p>
-              </div>
-            </div>
-
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Are you sure you want to update <strong className="text-white">{confirmModal.user.email}</strong> to{' '}
-              <strong className="text-purple-300 uppercase">{confirmModal.nextValue}</strong>?
-            </p>
-
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#2a243a]">
-              <button
-                onClick={() => setConfirmModal(null)}
-                className="px-4 py-2 rounded-xl bg-[#0c0915] border border-[#2a243a] text-xs font-semibold text-[#a09cb0] hover:text-white transition cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleExecuteAction}
-                className="btn-primary-pill px-5 py-2 text-xs font-bold cursor-pointer"
-              >
-                Confirm Update
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
