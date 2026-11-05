@@ -49,6 +49,15 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // User Roles collection
+    match /user_roles/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow write: if isSignedIn() && (
+        (request.auth.uid == userId && request.resource.data.role == 'user') ||
+        isAdmin()
+      );
+    }
+
     // Admin Audit Logs (Immutable once written)
     match /adminAuditLogs/{logId} {
       allow read, create: if isAdmin();

@@ -145,31 +145,29 @@ export function subscribeToActiveAnnouncements(
   callback: (announcements: SystemAnnouncement[]) => void
 ): () => void {
   const path = 'announcements';
-  try {
-    const q = query(collection(db, path), where('active', '==', true));
-    return onSnapshot(
-      q,
-      (snap) => {
-        const announcements: SystemAnnouncement[] = [];
-        snap.forEach((d) => {
-          announcements.push({ ...(d.data() as SystemAnnouncement), id: d.id });
-        });
-        callback(
-          announcements.sort(
-            (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-          )
-        );
-      },
-      (err) => {
-        console.warn('onSnapshot fallback for announcements:', err);
-        getActiveAnnouncements().then(callback);
-      }
-    );
-  } catch (err) {
-    console.warn('subscribeToActiveAnnouncements error:', err);
-    getActiveAnnouncements().then(callback);
-    return () => {};
-  }
+  const q = query(collection(db, path), where('active', '==', true));
+  
+  const unsubscribe = onSnapshot(
+    q,
+    (snap) => {
+      const announcements: SystemAnnouncement[] = [];
+      snap.forEach((d) => {
+        announcements.push({ ...(d.data() as SystemAnnouncement), id: d.id });
+      });
+      callback(
+        announcements.sort(
+          (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+        )
+      );
+    },
+    (err) => {
+      console.error('Firestore Announcement listener error:', err);
+      // Firebase SDK automatically retries real-time streams on transient errors.
+      // Do not perform manual fallback fetch here as it might conflict with active listener.
+    }
+  );
+
+  return unsubscribe;
 }
 
 export async function getActiveAnnouncements(): Promise<SystemAnnouncement[]> {

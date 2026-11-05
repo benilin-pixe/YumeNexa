@@ -13,9 +13,6 @@ import {
   TrendingUp,
   Cpu,
   Layers,
-  BarChart3,
-  LineChart,
-  PieChart,
   CheckCircle,
   Sparkles,
   Zap,
@@ -277,8 +274,8 @@ export const AdminDashboardView: React.FC<DashboardViewProps> = ({ onNavigate })
             }}
             className="px-4 py-2.5 rounded-xl bg-[#0c0915] border border-[#2a243a] hover:border-purple-500/50 text-[#f2effc] font-semibold text-xs flex items-center gap-2 transition cursor-pointer"
           >
-            <BarChart3 className="w-4 h-4 text-purple-400" />
-            <span>View Analytics</span>
+            <TrendingUp className="w-4 h-4 text-purple-400" />
+            <span>View Statistics</span>
           </button>
 
           {/* Refresh Data */}
@@ -421,255 +418,17 @@ export const AdminDashboardView: React.FC<DashboardViewProps> = ({ onNavigate })
 
       {/* Dedicated Animated Analytics & Interactive Graphs Section */}
       <div id="analytics-section" className="bg-[#161224] rounded-3xl p-6 sm:p-7 border border-[#2a243a] shadow-xl space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#2a243a] pb-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-purple-400" />
-              <h3 className="text-lg font-bold font-display text-white">Live Platform Analytics & Trends</h3>
-              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                Interactive Graphs
-              </span>
+              <h3 className="text-lg font-bold font-display text-white">Platform Statistics</h3>
             </div>
             <p className="text-xs text-[#a09cb0] mt-0.5">
-              Visualizing active viewer sessions, streaming hours, and anime genre distribution.
+              Live platform metrics and user distribution summary.
             </p>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Graph Tab Switcher */}
-            <div className="flex items-center p-1 rounded-xl bg-[#0c0915] border border-[#2a243a]">
-              <button
-                onClick={() => setActiveGraphTab('traffic')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
-                  activeGraphTab === 'traffic'
-                    ? 'bg-purple-600 text-white shadow-sm'
-                    : 'text-[#a09cb0] hover:text-white'
-                }`}
-              >
-                <LineChart className="w-3.5 h-3.5" />
-                <span>Audience</span>
-              </button>
-              <button
-                onClick={() => setActiveGraphTab('hours')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
-                  activeGraphTab === 'hours'
-                    ? 'bg-purple-600 text-white shadow-sm'
-                    : 'text-[#a09cb0] hover:text-white'
-                }`}
-              >
-                <BarChart3 className="w-3.5 h-3.5" />
-                <span>Stream Hours</span>
-              </button>
-              <button
-                onClick={() => setActiveGraphTab('genres')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
-                  activeGraphTab === 'genres'
-                    ? 'bg-purple-600 text-white shadow-sm'
-                    : 'text-[#a09cb0] hover:text-white'
-                }`}
-              >
-                <PieChart className="w-3.5 h-3.5" />
-                <span>Categories</span>
-              </button>
-            </div>
-
-            {/* Time Range Selector */}
-            <div className="flex items-center p-1 rounded-xl bg-[#0c0915] border border-[#2a243a]">
-              {(['7d', '30d', '90d'] as const).map((r) => (
-                <button
-                  key={r}
-                  onClick={() => setAnalyticsRange(r)}
-                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold uppercase transition cursor-pointer ${
-                    analyticsRange === r
-                      ? 'bg-purple-600/30 text-purple-300 border border-purple-500/40'
-                      : 'text-[#a09cb0] hover:text-white'
-                  }`}
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
-
-        {/* Tab 1: Interactive Curve Line Graph (Audience & Active Viewers) */}
-        {activeGraphTab === 'traffic' && (
-          <div className="space-y-4 animate-in fade-in duration-300">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-              <div className="flex items-center gap-4">
-                <span className="text-white font-bold flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-purple-500" />
-                  Active Users & Viewers
-                </span>
-                <span className="text-[#a09cb0]">Peak: <strong className="text-purple-300 font-mono">{maxTraffic.toLocaleString()}</strong></span>
-              </div>
-              <span className="text-[11px] text-[#a09cb0] font-mono">
-                Hover nodes to inspect values
-              </span>
-            </div>
-
-            {/* SVG Interactive Animated Chart */}
-            <div className="relative w-full h-56 bg-[#0c0915] rounded-2xl border border-[#2a243a] p-4 flex items-center justify-center overflow-hidden">
-              <svg
-                viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-                className="w-full h-full overflow-visible"
-              >
-                <defs>
-                  <linearGradient id="purpleGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#a855f7" stopOpacity="0.45" />
-                    <stop offset="85%" stopColor="#6366f1" stopOpacity="0.05" />
-                    <stop offset="100%" stopColor="#0c0915" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-
-                {/* Horizontal Gridlines */}
-                {[0.25, 0.5, 0.75].map((ratio, i) => {
-                  const y = paddingY + ratio * (svgHeight - paddingY * 2);
-                  return (
-                    <line
-                      key={i}
-                      x1={paddingX}
-                      y1={y}
-                      x2={svgWidth - paddingX}
-                      y2={y}
-                      stroke="#2a243a"
-                      strokeDasharray="4 4"
-                      strokeWidth="1"
-                    />
-                  );
-                })}
-
-                {/* Area Fill */}
-                <path d={areaD} fill="url(#purpleGradient)" />
-
-                {/* Animated Curve Stroke */}
-                <path
-                  d={pathD}
-                  fill="none"
-                  stroke="#a855f7"
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                  className="transition-all duration-500 ease-out"
-                />
-
-                {/* Interactive Points */}
-                {points.map((p, i) => (
-                  <g key={i}>
-                    <circle
-                      cx={p.x}
-                      cy={p.y}
-                      r="5.5"
-                      fill="#0c0915"
-                      stroke="#c084fc"
-                      strokeWidth="3"
-                      className="cursor-pointer hover:r-7 hover:fill-purple-400 transition-all duration-150"
-                      onMouseEnter={() => setHoveredPoint(p)}
-                      onMouseLeave={() => setHoveredPoint(null)}
-                    />
-                    {/* X-axis label */}
-                    <text
-                      x={p.x}
-                      y={svgHeight - 4}
-                      textAnchor="middle"
-                      fill="#a09cb0"
-                      fontSize="10"
-                      fontWeight="bold"
-                    >
-                      {p.label}
-                    </text>
-                  </g>
-                ))}
-              </svg>
-
-              {/* Hover Tooltip */}
-              {hoveredPoint && (
-                <div
-                  className="absolute pointer-events-none px-3 py-1.5 rounded-xl bg-[#161224] border border-purple-500/60 shadow-2xl text-[11px] font-bold text-white z-20 animate-in fade-in zoom-in-95"
-                  style={{
-                    left: `${(hoveredPoint.x / svgWidth) * 100}%`,
-                    top: `${(hoveredPoint.y / svgHeight) * 100}%`,
-                    transform: 'translate(-50%, -130%)',
-                  }}
-                >
-                  <p className="text-purple-300 font-mono">{hoveredPoint.label}</p>
-                  <p className="text-white font-extrabold">{hoveredPoint.value.toLocaleString()} Viewers</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Tab 2: Animated Bar Chart (Streaming Watch Hours) */}
-        {activeGraphTab === 'hours' && (
-          <div className="space-y-4 animate-in fade-in duration-300">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-white font-bold flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-sky-400" />
-                Aggregated Hours Streamed by Day
-              </span>
-              <span className="text-[#a09cb0] font-mono">
-                Total: <strong className="text-sky-300">{currentHoursData.reduce((a, b) => a + b.value, 0).toLocaleString()} hrs</strong>
-              </span>
-            </div>
-
-            <div className="h-56 bg-[#0c0915] rounded-2xl border border-[#2a243a] p-4 flex items-end justify-between gap-3 sm:gap-6">
-              {currentHoursData.map((d, i) => {
-                const maxVal = Math.max(...currentHoursData.map((item) => item.value), 10);
-                const heightPercent = Math.max(12, (d.value / maxVal) * 85);
-                return (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-2 group h-full justify-end">
-                    <span className="text-[10px] text-sky-300 font-mono font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-                      {d.value}h
-                    </span>
-                    <div className="w-full max-w-[42px] bg-[#1d1830] rounded-xl flex items-end overflow-hidden h-full">
-                      <div
-                        style={{ height: `${heightPercent}%` }}
-                        className="w-full bg-gradient-to-t from-sky-500 to-indigo-500 rounded-t-xl group-hover:from-sky-400 group-hover:to-purple-500 transition-all duration-500 shadow-lg shadow-sky-500/20"
-                      />
-                    </div>
-                    <span className="text-[11px] font-bold text-[#a09cb0] group-hover:text-white transition">
-                      {d.label}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Tab 3: Categories & Genres Distribution */}
-        {activeGraphTab === 'genres' && (
-          <div className="space-y-4 animate-in fade-in duration-300">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-white font-bold flex items-center gap-1.5">
-                <PieChart className="w-4 h-4 text-purple-400" />
-                Catalogue Distribution by Anime Genre
-              </span>
-              <span className="text-[#a09cb0] font-mono">5 Top Categories</span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {genreBreakdown.map((g, idx) => (
-                <div key={idx} className="p-4 rounded-2xl bg-[#0c0915] border border-[#2a243a] space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-[#f2effc]">{g.name}</span>
-                    <span className="text-purple-300 font-mono font-bold">{g.share}%</span>
-                  </div>
-                  <div className="w-full h-2.5 rounded-full bg-[#161224] overflow-hidden">
-                    <div
-                      style={{ width: `${g.share}%` }}
-                      className={`h-full rounded-full bg-gradient-to-r ${g.color} transition-all duration-700`}
-                    />
-                  </div>
-                  <div className="text-[10px] text-[#a09cb0] flex justify-between">
-                    <span>{g.count}</span>
-                    <span>High Demand</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Standalone Modules Quick Access & Recent Users Grid */}

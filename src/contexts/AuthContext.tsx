@@ -119,37 +119,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const registerWithEmail = async (email: string, pass: string, name: string) => {
     const credential = await createUserWithEmailAndPassword(auth, email, pass);
-    if (credential.user) {
-      await updateProfile(credential.user, { displayName: name });
-      const emailNorm = normalizeEmail(email);
-      const isDesignatedSuperAdmin = emailNorm === 'benilin76@gmail.com';
+    try {
+      if (credential.user) {
+        await updateProfile(credential.user, { displayName: name });
+        const emailNorm = normalizeEmail(email);
+        const isDesignatedSuperAdmin = emailNorm === 'benilin76@gmail.com';
 
-      const profile: UserProfile = {
-        uid: credential.user.uid,
-        email,
-        displayName: name,
-        role: isDesignatedSuperAdmin ? 'admin' : 'user',
-        theme: 'dark',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      await createUserProfile(profile);
-      setUserProfile(profile);
+        const profile: UserProfile = {
+          uid: credential.user.uid,
+          email,
+          displayName: name,
+          role: isDesignatedSuperAdmin ? 'admin' : 'user',
+          theme: 'dark',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        await createUserProfile(profile);
+        setUserProfile(profile);
 
-      // Trigger server-side initial Super Admin activation
-      if (isDesignatedSuperAdmin) {
-        try {
-          const idToken = await credential.user.getIdToken();
-          await fetch('/api/admin/provision-super-admin', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ idToken, uid: credential.user.uid, email }),
-          });
-          setIsSuperAdminServerVerified(true);
-        } catch (e) {
-          console.warn('[AuthContext] Registration super admin activation note:', e);
+        // Trigger server-side initial Super Admin activation
+        if (isDesignatedSuperAdmin) {
+          try {
+            const idToken = await credential.user.getIdToken();
+            await fetch('/api/admin/provision-super-admin', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ idToken, uid: credential.user.uid, email }),
+            });
+            setIsSuperAdminServerVerified(true);
+          } catch (e) {
+            console.warn('[AuthContext] Registration super admin activation note:', e);
+          }
         }
       }
+    } catch (err) {
+      // Cleanup auth user if profile creation fails
+      await credential.user?.delete();
+      throw err;
     }
   };
 

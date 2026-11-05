@@ -21,12 +21,14 @@ import { WatchlistPage } from './pages/WatchlistPage';
 import { AccountPage } from './pages/AccountPage';
 import { AdminPage } from './pages/AdminPage';
 
+import { useAuth } from './contexts/AuthContext';
 import { AnimeMedia } from './types/anime';
 import { NewsArticle } from './types/news';
 import { updatePageSEO } from './utils/seo';
 import { trackPageView, initGlobalErrorListeners, checkMaintenanceMode } from './utils/analyticsTracker';
 
 export function YumeNexaApp() {
+  const { currentUser, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<string>(() => {
     if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
       return 'admin';
@@ -44,6 +46,12 @@ export function YumeNexaApp() {
 
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!authLoading && !currentUser && !window.location.pathname.startsWith('/admin')) {
+      setIsAuthOpen(true);
+    }
+  }, [currentUser, authLoading]);
 
   // Global listeners and analytics tracking
   useEffect(() => {
@@ -198,7 +206,7 @@ export function YumeNexaApp() {
       />
 
       {/* User Authentication Modal Overlay */}
-      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} canClose={!!currentUser} />
     </div>
   );
 }
