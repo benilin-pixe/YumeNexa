@@ -1,8 +1,6 @@
-import { queryArticles, getAllSources } from './newsDb';
-
 export interface SystemLogEntry {
   id: string;
-  jobName: string; // e.g. 'NEWS_SYNC', 'PROVIDER_CHECK', 'SOURCE_TEST', 'SYSTEM'
+  jobName: string; // e.g. 'PROVIDER_CHECK', 'SOURCE_TEST', 'SYSTEM'
   message: string;
   status: 'success' | 'failure';
   timestamp: string;
@@ -51,8 +49,8 @@ export interface ImportedAnime {
 const systemLogs: SystemLogEntry[] = [
   {
     id: 'log-1',
-    jobName: 'NEWS_SYNC',
-    message: 'Completed RSS news feeds refresh. Ingested 18 new articles.',
+    jobName: 'SYSTEM',
+    message: 'System runtime initialized successfully.',
     status: 'success',
     timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
   },
@@ -557,9 +555,6 @@ export function deleteStreamingSource(animeId: number, episodeNumber: number, so
 
 // Compute total statistics for admin overview
 export function getAdminOverviewCounts() {
-  const newsSources = getAllSources();
-  const articlesData = queryArticles({ limit: 1 });
-
   let totalAnimeCount = importedAnimeList.length;
   let totalEpisodesCount = 0;
   let totalSourcesCount = 0;
@@ -576,7 +571,6 @@ export function getAdminOverviewCounts() {
   });
 
   const activeProvidersCount = externalProviders.filter((p) => p.active).length;
-  const activeFeedsCount = newsSources.filter((s) => s.active && s.lastRefreshStatus !== 'ERROR').length;
 
   return {
     totalUsers: 14,
@@ -585,8 +579,6 @@ export function getAdminOverviewCounts() {
     episodesCount: totalEpisodesCount,
     sourcesAuthorizedCount: authorizedSourcesCount,
     sourcesTotalCount: totalSourcesCount,
-    newsArticlesCount: articlesData.total,
-    activeFeedsCount,
     providersActiveCount: activeProvidersCount,
     providersTotalCount: externalProviders.length,
     favouritesCount: 38,
@@ -602,7 +594,6 @@ let siteSettings = {
   maintenanceMode: false,
   maintenanceMessage: 'YumeNexa is currently undergoing scheduled platform upgrades. We will be back online shortly!',
   featuredAnimeId: 21,
-  newsRefreshIntervalMinutes: 30,
   autoApproveSources: true,
 };
 

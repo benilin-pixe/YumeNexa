@@ -17,7 +17,7 @@ export const Footer: React.FC<{ setActiveTab: (tab: string) => void }> = ({ setA
             </span>
           </div>
           <p className="text-[#a09cb0] leading-relaxed">
-            Enter the next anime universe. Discover trending shows, release schedules, news, and personal watchlists with high fidelity.
+            Enter the next anime universe. Discover trending shows, release schedules, and personal watchlists with high fidelity.
           </p>
         </div>
 
@@ -28,7 +28,6 @@ export const Footer: React.FC<{ setActiveTab: (tab: string) => void }> = ({ setA
             <li><button onClick={() => setActiveTab('explore')} className="hover:text-purple-400 transition cursor-pointer">Explore Anime</button></li>
             <li><button onClick={() => setActiveTab('watch')} className="hover:text-purple-400 transition cursor-pointer">Watch & Streaming</button></li>
             <li><button onClick={() => setActiveTab('schedule')} className="hover:text-purple-400 transition cursor-pointer">Release Schedule</button></li>
-            <li><button onClick={() => setActiveTab('news')} className="hover:text-purple-400 transition cursor-pointer">Anime News Centre</button></li>
           </ul>
         </div>
 

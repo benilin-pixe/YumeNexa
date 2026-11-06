@@ -2,7 +2,7 @@ export function updatePageSEO(title: string, description?: string, image?: strin
   const fullTitle = `${title} — YumeNexa`;
   document.title = fullTitle;
 
-  const metaDesc = description || 'Enter the next anime universe — Discover trending anime, release schedules, news, trailers, streaming, and personal watchlists.';
+  const metaDesc = description || 'Enter the next anime universe — Discover trending anime, release schedules, trailers, streaming, and personal watchlists.';
 
   let descTag = document.querySelector('meta[name="description"]');
   if (!descTag) {

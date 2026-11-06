@@ -16,14 +16,12 @@ import { HomePage } from './pages/HomePage';
 import { ExplorePage } from './pages/ExplorePage';
 import { WatchPage } from './pages/WatchPage';
 import { SchedulePage } from './pages/SchedulePage';
-import { NewsPage } from './pages/NewsPage';
 import { WatchlistPage } from './pages/WatchlistPage';
 import { AccountPage } from './pages/AccountPage';
 import { AdminPage } from './pages/AdminPage';
 
 import { useAuth } from './contexts/AuthContext';
 import { AnimeMedia } from './types/anime';
-import { NewsArticle } from './types/news';
 import { updatePageSEO } from './utils/seo';
 import { trackPageView, initGlobalErrorListeners, checkMaintenanceMode } from './utils/analyticsTracker';
 
@@ -76,7 +74,6 @@ export function YumeNexaApp() {
       explore: 'Explore Anime Directory',
       watch: 'Watch Anime & Streaming',
       schedule: 'Live Release Schedule & Countdowns',
-      news: 'Anime News Centre',
       watchlist: 'My Personal Library',
       account: 'My Account Settings',
       admin: 'Admin Center',
@@ -107,9 +104,6 @@ export function YumeNexaApp() {
     setActiveTab('watch');
   };
 
-  const handleSelectNewsArticle = (article: NewsArticle) => {
-    setActiveTab('news');
-  };
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 dark:bg-slate-950 dark:text-slate-100 light:bg-slate-50 light:text-slate-900 transition-colors duration-200 selection:bg-violet-600 selection:text-white">
@@ -159,8 +153,6 @@ export function YumeNexaApp() {
             <SchedulePage onSelectAnime={handleSelectAnime} onWatchAnime={handleWatchAnime} />
           )}
 
-          {activeTab === 'news' && <NewsPage />}
-
           {activeTab === 'watchlist' && (
             <WatchlistPage
               onSelectAnime={handleSelectAnime}
@@ -202,7 +194,6 @@ export function YumeNexaApp() {
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
         onSelectAnime={handleSelectAnime}
-        onSelectNews={handleSelectNewsArticle}
       />
 
       {/* User Authentication Modal Overlay */}

@@ -17,7 +17,6 @@ export interface AdminOverviewStats {
   activeUsers: number;
   suspendedUsers: number;
   totalWatchlists: number;
-  totalNewsArticles: number;
   totalAuditLogs: number;
 }
 
@@ -159,7 +158,6 @@ export interface SiteSettingsData {
   maintenanceMode: boolean;
   maintenanceMessage: string;
   featuredAnimeId: number;
-  newsRefreshIntervalMinutes: number;
   autoApproveSources: boolean;
 }
 
@@ -176,7 +174,6 @@ export async function fetchAdminSettings(): Promise<SiteSettingsData> {
     maintenanceMode: false,
     maintenanceMessage: 'YumeNexa is currently undergoing scheduled platform upgrades. We will be back online shortly!',
     featuredAnimeId: 21,
-    newsRefreshIntervalMinutes: 30,
     autoApproveSources: true,
   };
 }

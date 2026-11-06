@@ -1,18 +1,6 @@
 import express from 'express';
 import http from 'http';
 import { createServer as createViteServer } from 'vite';
-import {
-  getNewsWithStaleWhileRevalidate,
-  executeControlledRefresh,
-  getCachedArticlesFromFirestore,
-} from './src/services/firestoreNewsCache';
-import { DEFAULT_NEWS_SOURCES } from './src/services/serverNewsAggregator';
-import {
-  getAllSources,
-  addSource,
-  removeSource,
-  getRecentRefreshLogs,
-} from './src/services/newsDb';
 
 const PORT = Number(process.env.PORT) || 3000;
 const SECRET_API_KEY = process.env.API_KEY || 'yumenexa-news-cron-secret-key-2026';
@@ -43,113 +31,6 @@ async function startServer() {
   });
 
   /**
-   * PUBLIC API: GET /api/news
-   * Serves news with stale-while-revalidate, category, search, limit, and offset
-   */
-  app.get('/api/news', async (req, res) => {
-    try {
-      const category = (req.query.category as string) || 'All';
-      const search = (req.query.search as string) || '';
-      const limit = Math.min(Math.max(parseInt(req.query.limit as string, 10) || 20, 1), 50);
-      const offset = Math.max(parseInt(req.query.offset as string, 10) || 0, 0);
-      const forceRefresh = req.query.refresh === 'true';
-      const isDebug = req.query.debug === '1' || req.query.debug === 'true';
-
-      const newsData = await getNewsWithStaleWhileRevalidate(forceRefresh);
-
-      let filtered = newsData.articles;
-
-      if (category && category !== 'All') {
-        filtered = filtered.filter(
-          (a) => a.category?.toLowerCase() === category.toLowerCase()
-        );
-      }
-
-      if (search && search.trim()) {
-        const term = search.toLowerCase().trim();
-        filtered = filtered.filter(
-          (a) =>
-            a.title.toLowerCase().includes(term) ||
-            (a.summary || '').toLowerCase().includes(term) ||
-            a.sourceName.toLowerCase().includes(term)
-        );
-      }
-
-      const total = filtered.length;
-      const paginatedArticles = filtered.slice(offset, offset + limit);
-
-      res.setHeader('Cache-Control', 'public, s-maxage=900, stale-while-revalidate=3600');
-
-      if (isDebug) {
-        return res.status(200).json({
-          timestamp: newsData.lastRefreshedAt,
-          totalArticles: newsData.articles.length,
-          fromCache: newsData.fromCache,
-          isStale: newsData.isStale,
-          sourceDebug: newsData.sourceDebug || newsData.sourceHealth,
-          articles: paginatedArticles,
-          total,
-          limit,
-          offset,
-        });
-      }
-
-      return res.status(200).json({
-        articles: paginatedArticles,
-        total,
-        limit,
-        offset,
-        cached: newsData.fromCache,
-        isStale: newsData.isStale,
-        lastRefreshedAt: newsData.lastRefreshedAt,
-        sourceHealth: newsData.sourceHealth,
-      });
-    } catch (err: any) {
-      console.error('[API /api/news Error]:', err);
-      return res.status(500).json({ error: 'Failed to query news articles' });
-    }
-  });
-
-  /**
-   * GET /api/news/sources
-   * Returns list of configured RSS feed sources with status and stats
-   */
-  app.get('/api/news/sources', async (req, res) => {
-    try {
-      const cachedData = await getCachedArticlesFromFirestore();
-      const healthMap = new Map<string, any>();
-
-      for (const h of cachedData.sourceHealth) {
-        healthMap.set(h.id, h);
-      }
-
-      const sourcesList = DEFAULT_NEWS_SOURCES.map((src) => {
-        const health = healthMap.get(src.id);
-        const articleCount = cachedData.articles.filter((a) => a.sourceName === src.name).length;
-
-        return {
-          id: src.id,
-          name: src.name,
-          url: src.url,
-          siteUrl: src.siteUrl,
-          category: src.category,
-          active: src.active,
-          lastRefreshStatus: health?.status || 'SUCCESS',
-          lastRefreshAt: health?.lastRefreshAt || cachedData.lastRefreshedAt || new Date().toISOString(),
-          lastError: health?.lastError || null,
-          articleCount,
-        };
-      });
-
-      res.setHeader('Cache-Control', 'no-cache');
-      return res.status(200).json(sourcesList);
-    } catch (err: any) {
-      console.error('[API /api/news/sources Error]:', err);
-      return res.status(500).json({ error: 'Failed to retrieve news sources' });
-    }
-  });
-
-  /**
    * PUBLIC API: GET /api/health
    * Real server process diagnostics for system monitoring
    */
@@ -175,7 +56,6 @@ async function startServer() {
 
   /**
    * Helper to verify admin authorization for mutation / refresh endpoints.
-   * Direct API calls from unauthorized users/clients return 403 Forbidden.
    */
   function isAuthorizedAdmin(req: express.Request): boolean {
     const apiKey = req.headers['x-api-key'] || req.query.key;
@@ -200,13 +80,7 @@ async function startServer() {
   }
 
   /**
-   * SECURE INITIAL SUPER ADMIN PROVISIONING & CLAIMS ASSIGNMENT
-   * Requirements:
-   * 1. Exact case-insensitive email match for beniLin76@gmail.com
-   * 2. Must be an authenticated Firebase user with verified email or authenticated ID token
-   * 3. Set custom claim { admin: true, superAdmin: true } using Firebase Admin SDK
-   * 4. Audit log recorded in adminAuditLogs
-   * 5. Reject ordinary admins from modifying Super Admin
+   * SECURE INITIAL SUPER ADMIN PROVISIONING
    */
   app.post('/api/admin/provision-super-admin', async (req: express.Request, res: express.Response) => {
     const { idToken, uid, email } = req.body || {};
@@ -318,7 +192,6 @@ async function startServer() {
 
   /**
    * PROTECTED ADMIN API: GET /api/admin/health-check
-   * Full system diagnostics, database latency ping, external APIs check, and server memory stats
    */
   app.get('/api/admin/health-check', async (req, res) => {
     if (!isAuthorizedAdmin(req)) {
@@ -328,9 +201,6 @@ async function startServer() {
     const startMs = Date.now();
     const apis = [
       { name: 'AniList GraphQL', url: 'https://graphql.anilist.co' },
-      { name: 'Crunchyroll RSS', url: 'https://cr-news-api-service.prd.crunchyrollsvc.com/v1/en-US/rss' },
-      { name: 'AniNews API', url: 'https://aninews.vercel.app/api/news?limit=5' },
-      { name: 'Anime News Network', url: 'https://www.animenewsnetwork.com/all/rss' },
     ];
 
     const apiStatuses = await Promise.all(
@@ -368,7 +238,6 @@ async function startServer() {
       services: {
         firestore: { status: 'UP', latencyMs: 12 },
         firebaseAuth: { status: 'UP' },
-        newsCache: { status: 'UP' },
         server: {
           uptimeSeconds: Math.floor(process.uptime()),
           memoryHeapUsedMb: Math.round(memory.heapUsed / 1024 / 1024),
@@ -400,7 +269,6 @@ async function startServer() {
 
   /**
    * PROTECTED ADMIN API: GET /api/admin/overview
-   * Returns database-backed diagnostics and stat card numbers
    */
   app.get('/api/admin/overview', (req, res) => {
     if (!isAuthorizedAdmin(req)) {
@@ -676,106 +544,7 @@ async function startServer() {
   });
 
   /**
-   * POST /api/news/sources
-   * Add a new RSS feed source (Admin)
-   */
-  app.post('/api/news/sources', (req, res) => {
-    if (!isAuthorizedAdmin(req)) {
-      return res.status(403).json({ error: 'Forbidden: Administrator privileges required' });
-    }
-    const { name, url, siteUrl, category } = req.body;
-    if (!name || !url) {
-      return res.status(400).json({ error: 'Source name and RSS feed URL are required' });
-    }
-
-    try {
-      const newSource = addSource({ name, url, siteUrl, category });
-      return res.status(201).json(newSource);
-    } catch (err: any) {
-      console.error('[API POST /api/news/sources Error]:', err);
-      return res.status(500).json({ error: err.message || 'Failed to add source' });
-    }
-  });
-
-  /**
-   * DELETE /api/news/sources/:id
-   * Remove an RSS feed source (Admin)
-   */
-  app.delete('/api/news/sources/:id', (req, res) => {
-    if (!isAuthorizedAdmin(req)) {
-      return res.status(403).json({ error: 'Forbidden: Administrator privileges required' });
-    }
-    const { id } = req.params;
-    try {
-      removeSource(id);
-      return res.status(200).json({ success: true, message: `Source ${id} removed` });
-    } catch (err: any) {
-      console.error('[API DELETE /api/news/sources Error]:', err);
-      return res.status(500).json({ error: 'Failed to remove source' });
-    }
-  });
-
-  /**
-   * GET & POST /api/news/refresh
-   * Protected scheduled/manual job endpoint to trigger RSS feed refresh
-   */
-  const handleRefresh = async (req: express.Request, res: express.Response) => {
-    if (!isAuthorizedAdmin(req)) {
-      return res.status(403).json({ error: 'Forbidden: Administrator privileges required' });
-    }
-
-    try {
-      console.log('[API /api/news/refresh] Refresh triggered...');
-      const refreshed = await executeControlledRefresh();
-      const { addSystemLog } = require('./src/services/adminBackendService');
-      addSystemLog('NEWS_SYNC', `Refreshed RSS news feeds. Ingested ${refreshed.articles.length} total articles.`, 'success');
-
-      return res.status(200).json({
-        success: true,
-        message: 'News feeds refreshed successfully',
-        summary: {
-          totalArticlesFound: refreshed.articles.length,
-          totalArticlesAdded: refreshed.articles.length,
-          timestamp: refreshed.timestamp,
-        },
-        sourceHealth: refreshed.sourceHealth,
-      });
-    } catch (err: any) {
-      console.error('[API /api/news/refresh Error]:', err);
-      const { addSystemLog } = require('./src/services/adminBackendService');
-      addSystemLog('NEWS_SYNC', `News feeds refresh error: ${err.message}`, 'failure');
-
-      return res.status(500).json({
-        success: false,
-        error: err.message || 'Failed to refresh feeds',
-      });
-    }
-  };
-
-  app.get('/api/news/refresh', handleRefresh);
-  app.post('/api/news/refresh', handleRefresh);
-
-  /**
-   * GET /api/news/logs
-   * Retrieve recent refresh logs for admin diagnostics
-   */
-  app.get('/api/news/logs', (req, res) => {
-    if (!isAuthorizedAdmin(req)) {
-      return res.status(403).json({ error: 'Forbidden: Administrator privileges required' });
-    }
-    try {
-      const logs = getRecentRefreshLogs(30);
-      return res.status(200).json(logs);
-    } catch (err: any) {
-      console.error('[API /api/news/logs Error]:', err);
-      return res.status(500).json({ error: 'Failed to retrieve refresh logs' });
-    }
-  });
-
-  /**
    * GET /api/download/check
-   * Verifies if authorised direct downloads are available for an anime episode.
-   * Explicitly distinguishes streaming-only providers (e.g. AniEmbed) from direct downloads.
    */
   app.get('/api/download/check', (req, res) => {
     try {
@@ -832,7 +601,6 @@ async function startServer() {
 
   /**
    * POST /api/download/request
-   * Validates download request authorization for an episode.
    */
   app.post('/api/download/request', (req, res) => {
     try {
@@ -865,7 +633,6 @@ async function startServer() {
 
   /**
    * POST /api/download/validate
-   * Validates download URL against explicit provider allowlist to protect against SSRF & unauthorized downloads
    */
   app.post('/api/download/validate', (req, res) => {
     try {
@@ -898,7 +665,7 @@ async function startServer() {
     }
   });
 
-  // Mount Vite middleware for React SPA in development, sharing httpServer for HMR
+  // Mount Vite middleware for React SPA in development
   const vite = await createViteServer({
     server: {
       middlewareMode: true,
@@ -934,24 +701,6 @@ async function startServer() {
 
   process.once('SIGTERM', shutdown);
   process.once('SIGINT', shutdown);
-
-  const REFRESH_INTERVAL_MS = 30 * 60 * 1000;
-
-  // Initial news refresh on server startup
-  setTimeout(() => {
-    console.log('[YumeNexa News] Performing initial feed check...');
-    executeControlledRefresh().catch((err: any) => {
-      console.error('[YumeNexa News] Initial feed refresh error:', err?.message);
-    });
-  }, 2000);
-
-  // Automatic periodic refresh every 30 minutes
-  setInterval(() => {
-    console.log('[YumeNexa News] Running scheduled 30-minute news refresh...');
-    executeControlledRefresh().catch((err: any) => {
-      console.error('[YumeNexa News] Scheduled refresh error:', err?.message);
-    });
-  }, REFRESH_INTERVAL_MS);
 }
 
 startServer().catch((err) => {

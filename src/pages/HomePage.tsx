@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { AnimeMedia, AiringScheduleNode } from '../types/anime';
-import { NewsArticle } from '../types/news';
 import {
   getTrendingAnime,
   getPopularAnime,
@@ -10,13 +9,10 @@ import {
   getUpcomingCountdowns,
 } from '../services/anilistService';
 import { getKitsuTrendingAnime, getKitsuPopularAnime } from '../services/kitsuService';
-import { fetchAnimeNews } from '../services/animeNewsService';
 
 import { HeroCarousel } from '../components/home/HeroCarousel';
 import { UpcomingCountdownWidget } from '../components/home/UpcomingCountdownWidget';
 import { AnimeSection } from '../components/home/AnimeSection';
-import { NewsCard } from '../components/news/NewsCard';
-import { NewsDetailModal } from '../components/news/NewsDetailModal';
 import { Tv, ArrowRight, Bell, AlertTriangle, CheckCircle, Info, Sparkles } from 'lucide-react';
 import { subscribeToActiveAnnouncements } from '../services/firestoreService';
 import { SystemAnnouncement } from '../types/user';
@@ -42,11 +38,9 @@ export const HomePage: React.FC<HomePageProps> = ({
   const [upcoming, setUpcoming] = useState<AnimeMedia[]>([]);
   const [movies, setMovies] = useState<AnimeMedia[]>([]);
   const [countdowns, setCountdowns] = useState<AiringScheduleNode[]>([]);
-  const [news, setNews] = useState<NewsArticle[]>([]);
   const [announcements, setAnnouncements] = useState<SystemAnnouncement[]>([]);
 
   const [loading, setLoading] = useState(true);
-  const [selectedNewsArticle, setSelectedNewsArticle] = useState<NewsArticle | null>(null);
 
   useEffect(() => {
     const unsub = subscribeToActiveAnnouncements((list) => {
@@ -67,7 +61,6 @@ export const HomePage: React.FC<HomePageProps> = ({
         getUpcomingAnime(1, 12),
         getPopularMovies(1, 12),
         getUpcomingCountdowns(6),
-        fetchAnimeNews(),
       ]);
 
       if (!isMounted) return;
@@ -79,7 +72,6 @@ export const HomePage: React.FC<HomePageProps> = ({
         upcomingRes,
         moviesRes,
         countdownsRes,
-        newsRes,
       ] = results;
 
       // Primary AniList data with Kitsu fallbacks if AniList fails
@@ -101,7 +93,6 @@ export const HomePage: React.FC<HomePageProps> = ({
       if (upcomingRes.status === 'fulfilled') setUpcoming(upcomingRes.value?.media || []);
       if (moviesRes.status === 'fulfilled') setMovies(moviesRes.value?.media || []);
       if (countdownsRes.status === 'fulfilled') setCountdowns(countdownsRes.value || []);
-      if (newsRes.status === 'fulfilled') setNews((newsRes.value || []).slice(0, 6));
 
       setLoading(false);
     }
