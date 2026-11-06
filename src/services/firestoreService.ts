@@ -31,14 +31,20 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 
 export async function createUserProfile(profile: UserProfile): Promise<void> {
   const path = `users/${profile.uid}`;
-  const rolePath = `user_roles/${profile.uid}`;
   try {
-    await setDoc(doc(db, 'users', profile.uid), profile);
-    await setDoc(doc(db, 'user_roles', profile.uid), {
-      role: profile.role || 'user',
-      email: profile.email || '',
-      updatedAt: new Date().toISOString(),
-    }, { merge: true });
+    // 1. Primary User Profile in users collection with merge support
+    await setDoc(doc(db, 'users', profile.uid), profile, { merge: true });
+
+    // 2. Secondary role document in user_roles collection (isolated so non-critical role sync doesn't break profile creation)
+    try {
+      await setDoc(doc(db, 'user_roles', profile.uid), {
+        role: profile.role || 'user',
+        email: profile.email || '',
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
+    } catch (roleErr) {
+      console.warn('[createUserProfile] Secondary user_roles write note:', roleErr);
+    }
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, path);
   }

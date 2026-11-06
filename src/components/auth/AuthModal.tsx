@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Mail, Lock, User as UserIcon } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { formatAuthError } from '../../utils/authErrors';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -27,19 +28,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, canClose 
     setLoading(true);
 
     try {
+      const cleanEmail = email.trim();
+      if (!cleanEmail) throw new Error('Email is required');
+
       if (mode === 'signin') {
-        await loginWithEmail(email, password);
+        if (!password) throw new Error('Password is required');
+        await loginWithEmail(cleanEmail, password);
         onClose();
       } else if (mode === 'signup') {
         if (!displayName.trim()) throw new Error('Display Name is required');
-        await registerWithEmail(email, password, displayName);
+        if (!password) throw new Error('Password is required');
+        if (password.length < 6) throw new Error('Password must be at least 6 characters long');
+        await registerWithEmail(cleanEmail, password, displayName.trim());
         onClose();
       } else if (mode === 'reset') {
-        await resetPassword(email);
+        await resetPassword(cleanEmail);
         setMessage('Password reset email sent! Check your inbox.');
       }
-    } catch (err: any) {
-      setError(err.message || 'Authentication error');
+    } catch (err: unknown) {
+      console.error('[AuthModal] Error encountered:', err);
+      setError(formatAuthError(err));
     } finally {
       setLoading(false);
     }

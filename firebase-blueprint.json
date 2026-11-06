@@ -5,6 +5,7 @@
       "description": "User profile settings and role",
       "type": "object",
       "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
         "userId": { "type": "string", "maxLength": 128 },
         "email": { "type": "string", "maxLength": 256 },
         "displayName": { "type": "string", "maxLength": 100 },
@@ -14,7 +15,7 @@
         "createdAt": { "type": "string" },
         "updatedAt": { "type": "string" }
       },
-      "required": ["userId", "email", "role"]
+      "required": ["uid", "email", "role"]
     },
     "watchlistItem": {
       "title": "WatchlistItem",

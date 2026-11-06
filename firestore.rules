@@ -10,10 +10,9 @@ service cloud.firestore {
 
     function isAdmin() {
       return isSignedIn() && (
-        request.auth.token.email == 'benilin76@gmail.com' ||
+        (request.auth.token.email != null && request.auth.token.email.lower() == 'benilin76@gmail.com') ||
         (request.auth.token != null && 'admin' in request.auth.token && request.auth.token.admin == true) ||
         exists(/databases/$(database)/documents/adminRoles/$(request.auth.uid)) ||
-        exists(/databases/$(database)/documents/adminRoles/$(request.auth.token.email)) ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
       );
@@ -26,21 +25,29 @@ service cloud.firestore {
 
     // User profiles (owner access + admin full access)
     match /users/{userId} {
-      allow get, list: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow create: if isSignedIn() && (
-        request.auth.uid == userId && (
-          !('role' in request.resource.data) ||
-          request.resource.data.role == 'user' ||
-          isAdmin()
-        )
+      // User can read their own profile; admins can read any profile
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      // Only admins can list/query all user profiles
+      allow list: if isAdmin();
+      
+      // Allow newly authenticated user to create their own profile using request.auth.uid as document ID
+      allow create: if isSignedIn() && request.auth.uid == userId && (
+        // Non-admin can only create with role == 'user' or without role field, preventing privilege escalation
+        (!('role' in request.resource.data) || request.resource.data.role == 'user' || isAdmin())
       );
+      
+      // Allow user to update their own profile, but cannot change role or UID
       allow update: if isSignedIn() && (
         (request.auth.uid == userId && (
-          !('role' in request.resource.data) ||
-          request.resource.data.role == resource.data.role
+          // Role cannot be changed by non-admin
+          (!('role' in request.resource.data) || request.resource.data.role == resource.data.role) &&
+          // UID cannot be changed
+          (!('uid' in request.resource.data) || request.resource.data.uid == resource.data.uid)
         )) ||
         isAdmin()
       );
+      
+      // Only admins can delete profiles
       allow delete: if isAdmin();
     }
 
@@ -51,11 +58,17 @@ service cloud.firestore {
 
     // User Roles collection
     match /user_roles/{userId} {
-      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow write: if isSignedIn() && (
-        (request.auth.uid == userId && request.resource.data.role == 'user') ||
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      allow create, update: if isSignedIn() && (
+        (request.auth.uid == userId && (
+          !('role' in request.resource.data) ||
+          request.resource.data.role == 'user' ||
+          isAdmin()
+        )) ||
         isAdmin()
       );
+      allow delete: if isAdmin();
     }
 
     // Admin Audit Logs (Immutable once written)

@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useWatchlist } from '../contexts/WatchlistContext';
 import { updateUserProfile } from '../services/firestoreService';
+import { formatAuthError } from '../utils/authErrors';
 
 export const AccountPage: React.FC = () => {
   const { currentUser, userProfile, logout, refreshProfile } = useAuth();
@@ -13,6 +14,7 @@ export const AccountPage: React.FC = () => {
   const [displayName, setDisplayName] = useState(userProfile?.displayName || '');
   const [saving, setSaving] = useState(false);
   const [savedMessage, setSavedMessage] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!currentUser) return null;
 
@@ -21,6 +23,7 @@ export const AccountPage: React.FC = () => {
     if (!displayName.trim()) return;
     setSaving(true);
     setSavedMessage(false);
+    setErrorMessage(null);
     try {
       await updateUserProfile(currentUser.uid, { displayName });
       await refreshProfile();
@@ -28,6 +31,7 @@ export const AccountPage: React.FC = () => {
       setTimeout(() => setSavedMessage(false), 3000);
     } catch (err) {
       console.error('Failed to update name:', err);
+      setErrorMessage(formatAuthError(err));
     } finally {
       setSaving(false);
     }
@@ -86,6 +90,12 @@ export const AccountPage: React.FC = () => {
               <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
                 <Check className="w-4 h-4" />
                 Profile updated successfully
+              </span>
+            )}
+
+            {errorMessage && (
+              <span className="text-xs text-rose-500 font-semibold">
+                {errorMessage}
               </span>
             )}
           </div>

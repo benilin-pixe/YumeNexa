@@ -40,33 +40,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const normalizeEmail = (e?: string | null) => (e || '').trim().toLowerCase();
 
-  const refreshProfile = async () => {
-    if (!currentUser) {
+  const refreshProfile = async (targetUser?: User | null) => {
+    const userToSync = targetUser !== undefined ? targetUser : (auth.currentUser || currentUser);
+    if (!userToSync) {
       setUserProfile(null);
       setIsSuperAdminServerVerified(false);
       return;
     }
 
-    const emailNorm = normalizeEmail(currentUser.email);
+    const emailNorm = normalizeEmail(userToSync.email);
     const isDesignatedSuperAdmin = emailNorm === 'benilin76@gmail.com';
 
     // When the user is the designated Super Admin, verify & activate server-side
     if (isDesignatedSuperAdmin) {
       try {
-        const token = await currentUser.getIdToken(false);
+        const token = await userToSync.getIdToken(false);
         const res = await fetch('/api/admin/provision-super-admin', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             idToken: token,
-            uid: currentUser.uid,
-            email: currentUser.email,
+            uid: userToSync.uid,
+            email: userToSync.email,
           }),
         });
         if (res.ok) {
           setIsSuperAdminServerVerified(true);
-          // Force refresh token to pull updated custom claims if Admin SDK set them
-          await currentUser.getIdToken(true);
+          await userToSync.getIdToken(true);
         }
       } catch (err) {
         console.warn('[AuthContext] Super admin verification note:', err);
@@ -74,23 +74,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      let profile = await getUserProfile(currentUser.uid);
+      let profile = await getUserProfile(userToSync.uid);
       if (!profile) {
+        // Safe Missing-Profile Recovery: Create default profile without overwriting existing credentials
         profile = {
-          uid: currentUser.uid,
-          email: currentUser.email || '',
-          displayName: currentUser.displayName || currentUser.email?.split('@')[0] || 'Anime Explorer',
-          photoURL: currentUser.photoURL || undefined,
+          uid: userToSync.uid,
+          email: userToSync.email || '',
+          displayName: userToSync.displayName || userToSync.email?.split('@')[0] || 'Anime Explorer',
+          photoURL: userToSync.photoURL || undefined,
           role: isDesignatedSuperAdmin ? 'admin' : 'user',
           theme: 'dark',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
         await createUserProfile(profile);
+      } else if (isDesignatedSuperAdmin && profile.role !== 'admin' && profile.role !== 'superadmin') {
+        // Self-heal designated admin role
+        profile = { ...profile, role: 'admin' };
+        await createUserProfile(profile);
       }
       setUserProfile(profile);
     } catch (err) {
-      console.warn('Profile sync warning:', err);
+      console.warn('[AuthContext] Profile sync warning:', err);
     }
   };
 
@@ -98,7 +103,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
-        await refreshProfile();
+        await refreshProfile(user);
       } else {
         setUserProfile(null);
         setIsSuperAdminServerVerified(false);
@@ -110,52 +115,81 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    const res = await signInWithPopup(auth, provider);
+    if (res.user) {
+      await refreshProfile(res.user);
+    }
   };
 
   const loginWithEmail = async (email: string, pass: string) => {
-    await signInWithEmailAndPassword(auth, email, pass);
+    const cleanEmail = email.trim();
+    if (!cleanEmail) throw new Error('Email is required');
+    if (!pass) throw new Error('Password is required');
+    
+    const credential = await signInWithEmailAndPassword(auth, cleanEmail, pass);
+    if (credential.user) {
+      // Immediate missing-profile check & recovery on successful login
+      await refreshProfile(credential.user);
+    }
   };
 
   const registerWithEmail = async (email: string, pass: string, name: string) => {
-    const credential = await createUserWithEmailAndPassword(auth, email, pass);
+    const cleanEmail = email.trim();
+    const cleanName = name.trim();
+
+    if (!cleanEmail) throw new Error('Email is required');
+    if (!pass) throw new Error('Password is required');
+    if (pass.length < 6) throw new Error('Password must be at least 6 characters long');
+    if (!cleanName) throw new Error('Display Name is required');
+
+    // 1. Create Auth account
+    const credential = await createUserWithEmailAndPassword(auth, cleanEmail, pass);
+    const user = credential.user;
+
+    // 2. Set Firebase Auth displayName
     try {
-      if (credential.user) {
-        await updateProfile(credential.user, { displayName: name });
-        const emailNorm = normalizeEmail(email);
-        const isDesignatedSuperAdmin = emailNorm === 'benilin76@gmail.com';
+      await updateProfile(user, { displayName: cleanName });
+    } catch (pErr) {
+      console.warn('[AuthContext] updateProfile non-fatal note:', pErr);
+    }
 
-        const profile: UserProfile = {
-          uid: credential.user.uid,
-          email,
-          displayName: name,
-          role: isDesignatedSuperAdmin ? 'admin' : 'user',
-          theme: 'dark',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        await createUserProfile(profile);
-        setUserProfile(profile);
+    // 3. Create Firestore user profile
+    const emailNorm = normalizeEmail(cleanEmail);
+    const isDesignatedSuperAdmin = emailNorm === 'benilin76@gmail.com';
 
-        // Trigger server-side initial Super Admin activation
-        if (isDesignatedSuperAdmin) {
-          try {
-            const idToken = await credential.user.getIdToken();
-            await fetch('/api/admin/provision-super-admin', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ idToken, uid: credential.user.uid, email }),
-            });
-            setIsSuperAdminServerVerified(true);
-          } catch (e) {
-            console.warn('[AuthContext] Registration super admin activation note:', e);
-          }
+    const profile: UserProfile = {
+      uid: user.uid,
+      email: cleanEmail,
+      displayName: cleanName,
+      role: isDesignatedSuperAdmin ? 'admin' : 'user',
+      theme: 'dark',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    try {
+      await createUserProfile(profile);
+      setUserProfile(profile);
+
+      // Trigger server-side initial Super Admin activation if applicable
+      if (isDesignatedSuperAdmin) {
+        try {
+          const idToken = await user.getIdToken();
+          await fetch('/api/admin/provision-super-admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken, uid: user.uid, email: cleanEmail }),
+          });
+          setIsSuperAdminServerVerified(true);
+        } catch (e) {
+          console.warn('[AuthContext] Registration super admin activation note:', e);
         }
       }
-    } catch (err) {
-      // Cleanup auth user if profile creation fails
-      await credential.user?.delete();
-      throw err;
+    } catch (profileErr) {
+      console.error('[AuthContext] Profile creation error during registration:', profileErr);
+      // Retain the authenticated account and state; missing-profile recovery will self-heal
+      setUserProfile(profile);
+      throw profileErr;
     }
   };
 
